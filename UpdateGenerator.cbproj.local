@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.718,=C:\Users\M\Documents\Embarcadero\Studio\Projects\Project2PCH1.h</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.176,=C:\Users\M\Documents\Embarcadero\Studio\Projects\Project2PCH1.h</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.041,C:\Users\M\Documents\Embarcadero\Studio\Projects\Project2.cbproj=C:\Pachenko94\UpdateGenerator\UG1.0\Project2.cbproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.908,C:\Users\M\Documents\Embarcadero\Studio\Projects\Unit2.h=C:\Pachenko94\UpdateGenerator\UG1.0\Unit2.h</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.044,C:\Pachenko94\UpdateGenerator\UG1.6\UpdateGeneratorPCH1.h=C:\Pachenko94\UpdateGenerator\UG1.6\Project2PCH1.h</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.169,C:\Users\M\Documents\Embarcadero\Studio\Projects\Project2PCH1.h=C:\Pachenko94\UpdateGenerator\UG1.0\Project2PCH1.h</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.907,=C:\Users\M\Documents\Embarcadero\Studio\Projects\Unit2.cpp</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.286,=C:\Users\M\Documents\Embarcadero\Studio\Projects\Unit2.cpp</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.908,C:\Users\M\Documents\Embarcadero\Studio\Projects\Unit2.cpp=C:\Pachenko94\UpdateGenerator\UG1.0\Unit2.cpp</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.235,=C:\Pachenko94\UpdateGenerator\UG1.0\CrcUnit.cpp</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.123,C:\Pachenko94\UpdateGenerator\UG1.6\UpdateGenerator.cbproj=C:\Pachenko94\UpdateGenerator\UG1.6\Project2.cbproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.909,C:\Users\M\Documents\Embarcadero\Studio\Projects\Unit2.dfm=C:\Pachenko94\UpdateGenerator\UG1.0\Unit2.dfm</Transaction>
+  </Transactions>
+	<BT_BuildType>Debug</BT_BuildType>
+</BorlandProject>
