@@ -3,7 +3,6 @@
 #include "unit1.h"
 #include "unit2.h"
 #include "unit3.h"
-#include <QCheckBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -34,13 +33,22 @@ MainWindow::MainWindow(QWidget *parent)
     // Инициализация тумблера Простой/Экспертный режим
     QCheckBox *expertModeCheckbox = new QCheckBox("Экспертный режим", ui->tabWidget);
     ui->tabWidget->setCornerWidget(expertModeCheckbox, Qt::TopRightCorner);
+    connect(ui->tabWidget, &QTabWidget::currentChanged, this, [this](int /*index*/) {
+        QTimer::singleShot(0, this, [this]() {
+            QWidget *cornerWidget = ui->tabWidget->cornerWidget(Qt::TopRightCorner);
+            if (cornerWidget) {
+                QPoint pos = cornerWidget->pos();
+                cornerWidget->move(pos.x(), pos.y() - 8);  // сдвиг на 2 пикселя вверх
+            }
+        });
+    });
 
     // Подключение сигнала toggled к слоту
     connect(expertModeCheckbox, &QCheckBox::toggled, this, &MainWindow::onExpertModeToggled);
 
     // Установка размеров окна
     expertSize = size();             // Текущий размер окна для экспертного режима
-    simpleSize = QSize(800, 300);    // Уменьшенный размер для простого режима
+    simpleSize = QSize(798, 300);    // Уменьшенный размер для простого режима
 
     // Инициализация Unit1 и Unit2
     unit1 = new Unit1(ui, this);
@@ -119,4 +127,24 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->btnUpdateCreateFileManual->move(640, 200);
         ui->btnCreateCommonUpdateFile->move(200, 200);
     }
+
+    QTimer::singleShot(0, this, [this]() {
+        QWidget *cornerWidget = ui->tabWidget->cornerWidget(Qt::TopRightCorner);
+        if (cornerWidget) {
+            QPoint pos = cornerWidget->pos();
+            cornerWidget->move(pos.x(), pos.y() - 8);
+        }
+    });
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    QTimer::singleShot(0, this, [this]() {
+        QWidget *cornerWidget = ui->tabWidget->cornerWidget(Qt::TopRightCorner);
+        if (cornerWidget) {
+            QPoint pos = cornerWidget->pos();
+            cornerWidget->move(pos.x(), pos.y() - 8);
+        }
+    });
 }

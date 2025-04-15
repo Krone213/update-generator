@@ -5,6 +5,8 @@
 #include <QScreen>
 #include <QApplication>
 #include <QTimer>
+#include <QShowEvent>
+#include <QCheckBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,6 +22,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+protected:
+    void showEvent(QShowEvent *event) override;
 
 private slots:
     void onExpertModeToggled(bool checked);

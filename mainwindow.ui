@@ -216,21 +216,21 @@
    <iconset theme="applications-development"/>
   </property>
   <property name="styleSheet">
-   <string notr="true">/* ----- Global Styles ----- */
+   <string notr="true">
+
 QMainWindow {
-    background-color: #ECEFF1; /* Light Blue Grey background */
+    background-color: #ECEFF1;
 }
 
 QWidget {
-    color: #212121; /* Dark grey text */
-    font-size: 10pt; /* Ensure base font size if not overridden */
+    color: #212121;
+    font-size: 10pt;
 }
 
-/* ----- Tab Widget ----- */
-QTabWidget::pane { /* Content area */
-    border: 1px solid #BDBDBD; /* Grey border */
-    background-color: #FFFFFF; /* White content background */
-    border-top: none; /* Let the tab bar handle the top */
+QTabWidget::pane {
+    border: 1px solid #BDBDBD;
+    background-color: #FFFFFF;
+    margin-top: -1px;
     border-radius: 0 0 4px 4px;
 }
 
@@ -239,7 +239,7 @@ QTabWidget::tab-bar {
 }
 
 QTabBar::tab { /* General tab style */
-    background-color: #CFD8DC; /* Light blue-grey inactive */
+    background-color: #FFFFFF; /* Light blue-grey inactive */
     color: #37474F; /* Darker blue-grey text for inactive tabs */
     border: 1px solid #BDBDBD;
     border-bottom: none;
@@ -269,8 +269,6 @@ QTabBar::tab:!selected:hover {
     color: #000000;
 }
 
-
-/* ----- Group Box ----- */
 QGroupBox {
     background-color: #FFFFFF; /* White background */
     border: 1px solid #BDBDBD; /* Subtle border */
@@ -291,7 +289,6 @@ QGroupBox::title {
     font-weight: bold;
 }
 
-/* ----- Buttons ----- */
 QPushButton {
     background-color: #E0E0E0; /* Light grey button */
     color: #212121;
@@ -317,7 +314,6 @@ QPushButton:disabled {
     border-color: #E0E0E0;
 }
 
-/* Specific styles for renamed buttons */
 QPushButton#btnUpdateCreateFileAuto, QPushButton#btnCreateFileAuto, QPushButton#btnUpload
 {
    background-color: #42A5F5; /* Accent blue */
@@ -362,7 +358,6 @@ QLineEdit:read-only {
     color: #757575;
 }
 
-/* ----- Combo Box Specific ----- */
 QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: top right;
@@ -379,78 +374,77 @@ QComboBox::down-arrow {
      width: 10px;
      height: 10px;
 }
-QComboBox::down-arrow:on { /* shift the arrow when popup is open */
+QComboBox::down-arrow:on {
     top: 1px;
     left: 1px;
 }
 
 QComboBox:hover {
-    border-color: #9E9E9E; /* Darker border on hover */
+    border-color: #9E9E9E;
 }
 
-/* Style the dropdown list */
 QComboBox QAbstractItemView {
     border: 1px solid #BDBDBD;
     background-color: #FFFFFF;
-    selection-background-color: #BBDEFB; /* Light blue selection */
+    selection-background-color: #BBDEFB;
     selection-color: #212121;
     padding: 2px;
 }
 
-/* ----- Check Boxes ----- */
 QCheckBox {
-    spacing: 8px; /* More space between indicator and text */
+    spacing: 8px;
     font-size: 10pt;
-    background-color: transparent; /* Ensure transparent background */
+    background-color: transparent;
 }
 QCheckBox::indicator {
     width: 16px;
     height: 16px;
-    border: 1px solid #757575; /* Slightly darker border for indicator */
+    border: 1px solid #757575;
     border-radius: 3px;
     background-color: #FFFFFF;
 }
 QCheckBox::indicator:hover {
-     border-color: #42A5F5; /* Blue border on hover */
+     border-color: #42A5F5;
 }
 QCheckBox::indicator:checked {
-    background-color: #42A5F5; /* Blue check background */
+    background-color: #42A5F5;
     border-color: #42A5F5;
-    /* Consider using an SVG icon for better scaling/look */
     image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0id2hpdGUiIGNsYXNzPSJiaSBiaS1jaGVjayIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNOCAwYS41LjUgMCAwIDAtLjUuNWwtNi41IDYuNWEuNS41IDAgMCAwIC43MDguNzA4TDggMS43MDcgMTMuNzkzIDcuNSA5IDMuNDM1IDguNjQ2IDMuMDY3YS41LjUgMCAwIDAtLjcwOCAwdjEwLjU4NmEuNS41IDAgMCAwIC41LjVoMmEuNS41IDAgMCAwIC41LS41VjguNzA3bDQuNjQ2IDQuNjQ3YS41LjUgMCAwIDAgLjcwOC0uNzA4bC01LjUtNS41YS41LjUgMCAwIDAtLjcwOCAwTDEuNSAxMS4zNTQgMSAxMC44NTZhLjUuNSAwIDAgMC0uNS41eiIvPgo8L3N2Zz4=); /* Embedded white check SVG */
 }
 
 QCheckBox::indicator:checked:hover {
-    border-color: #1E88E5; /* Darker blue */
+    border-color: #1E88E5;
     background-color: #1E88E5;
 }
+
 QCheckBox:disabled {
     color: #9E9E9E;
 }
+
 QCheckBox::indicator:disabled {
     border-color: #E0E0E0;
     background-color: #F5F5F5;
 }
+
 QCheckBox::indicator:checked:disabled {
     background-color: #CFD8DC;
     border-color: #CFD8DC;
     image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iIzk4QTU4OCIgY2xhc3M9ImJpIGJpLWNoZWNrIiB2aWV3Qm94PSIwIDAgMTYgMTYiPgogIDxwYXRoIGQ9Ik04IDBhLjUuNSAwIDAgMC0uNS41bC02LjUgNi41YS41LjUgMCAwIDAgLjcwOC43MDhMODEuNzA3IDEzLjc5MyA3LjUgOSAzLjQzNSA4LjY0NiAzLjA2N2EuNS41IDAgMCAwLS43MDggMHYxMC41ODZhLjUuNSAwIDAgMCAuNS41aDJhLjUuNSAwIDAgMCAuNS0uNVY4LjcwN2w0LjY0NiA0LjY0N2EuNS41IDAgMCAwIC43MDgtLjcwOGwtNS41LTUuNWEuNS41IDAgMCAwLS43MDggMEwxLjUgMTEuMzU0IDEgMTAuODU2YS41LjUgMCAwIDAtLjUuNXoiLz4KPC9zdmc+); /* Grey check */
 }
 
-/* ----- Labels ----- */
 QLabel {
-    background-color: transparent; /* Ensure labels have transparent background */
-    padding: 2px; /* Add slight padding for spacing */
+    background-color: transparent;
+    padding: 2px;
     font-size: 10pt;
 }
 
-/* Specific style for the connection status label */
-QLabel#lblConnectionStatus { /* Renamed from #label */
-    color: #388E3C; /* Darker green for better contrast */
-    font-size: 24pt; /* Make checkmark larger */
+QLabel#lblConnectionStatus {
+    color: #388E3C;
+    font-size: 24pt;
     font-weight: bold;
     qproperty-alignment: 'AlignCenter';
 }
+
 </string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -465,8 +459,14 @@ QLabel#lblConnectionStatus { /* Renamed from #label */
       <property name="autoFillBackground">
        <bool>false</bool>
       </property>
+      <property name="tabShape">
+       <enum>QTabWidget::TabShape::Rounded</enum>
+      </property>
       <property name="currentIndex">
        <number>0</number>
+      </property>
+      <property name="tabBarAutoHide">
+       <bool>false</bool>
       </property>
       <widget class="QWidget" name="StartFirmwareMenu">
        <attribute name="title">
