@@ -6,504 +6,1888 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>664</height>
+    <width>798</width>
+    <height>720</height>
    </rect>
   </property>
+  <property name="palette">
+   <palette>
+    <active>
+     <colorrole role="WindowText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Button">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Text">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="ButtonText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Base">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Window">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="PlaceholderText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="128">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </active>
+    <inactive>
+     <colorrole role="WindowText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Button">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Text">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="ButtonText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Base">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Window">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="PlaceholderText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="128">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </inactive>
+    <disabled>
+     <colorrole role="WindowText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Button">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Text">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="ButtonText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Base">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Window">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>236</red>
+        <green>239</green>
+        <blue>241</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="PlaceholderText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="128">
+        <red>33</red>
+        <green>33</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </disabled>
+   </palette>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>UpdateGenerator v3.0</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="applications-development"/>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">/* ----- Global Styles ----- */
+QMainWindow {
+    background-color: #ECEFF1; /* Light Blue Grey background */
+}
+
+QWidget {
+    color: #212121; /* Dark grey text */
+    font-size: 10pt; /* Ensure base font size if not overridden */
+}
+
+/* ----- Tab Widget ----- */
+QTabWidget::pane { /* Content area */
+    border: 1px solid #BDBDBD; /* Grey border */
+    background-color: #FFFFFF; /* White content background */
+    border-top: none; /* Let the tab bar handle the top */
+    border-radius: 0 0 4px 4px;
+}
+
+QTabWidget::tab-bar {
+    left: 5px; /* Indent to align with pane */
+}
+
+QTabBar::tab { /* General tab style */
+    background-color: #CFD8DC; /* Light blue-grey inactive */
+    color: #37474F; /* Darker blue-grey text for inactive tabs */
+    border: 1px solid #BDBDBD;
+    border-bottom: none;
+    padding: 8px 15px;
+    margin-right: 2px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    min-width: 120px; /* Give tabs some minimum width */
+}
+
+QTabBar::tab:selected {
+    background-color: #FFFFFF; /* Match pane background */
+    color: #1E88E5; /* Brighter blue for selected text */
+    border: 1px solid #BDBDBD;
+    border-bottom: 1px solid #FFFFFF; /* Hide bottom border to merge */
+    border-top: 3px solid #42A5F5; /* Accent blue top line */
+    margin-bottom: -1px; /* Pull tab down slightly */
+    font-weight: bold;
+}
+
+QTabBar::tab:!selected {
+    margin-top: 2px; /* Push non-selected tabs down slightly */
+}
+
+QTabBar::tab:!selected:hover {
+    background-color: #E0E0E0; /* Lighter grey on hover */
+    color: #000000;
+}
+
+
+/* ----- Group Box ----- */
+QGroupBox {
+    background-color: #FFFFFF; /* White background */
+    border: 1px solid #BDBDBD; /* Subtle border */
+    border-radius: 4px;
+    margin-top: 15px; /* Space for the title */
+    padding: 10px;
+    padding-top: 15px; /* More space inside top */
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 5px 0 5px;
+    left: 10px; /* Indent title slightly */
+    color: #546E7A; /* Blue-grey title text */
+    background-color: #FFFFFF; /* Ensure title background matches groupbox */
+    border: none;
+    font-weight: bold;
+}
+
+/* ----- Buttons ----- */
+QPushButton {
+    background-color: #E0E0E0; /* Light grey button */
+    color: #212121;
+    border: 1px solid #BDBDBD;
+    padding: 6px 15px; /* Slightly more padding */
+    border-radius: 4px;
+    min-height: 20px; /* Ensure consistent height */
+    font-size: 10pt;
+}
+
+QPushButton:hover {
+    background-color: #EEEEEE; /* Lighter grey on hover */
+    border-color: #9E9E9E; /* Slightly darker border on hover */
+}
+
+QPushButton:pressed {
+    background-color: #D5D5D5; /* Darker grey when pressed */
+}
+
+QPushButton:disabled {
+    background-color: #F5F5F5;
+    color: #9E9E9E;
+    border-color: #E0E0E0;
+}
+
+/* Specific styles for renamed buttons */
+QPushButton#btnUpdateCreateFileAuto, QPushButton#btnCreateFileAuto, QPushButton#btnUpload
+{
+   background-color: #42A5F5; /* Accent blue */
+   color: white;
+   border: none;
+   font-weight: bold;
+}
+
+QPushButton#btnUpdateCreateFileAuto:hover, QPushButton#btnCreateFileAuto:hover, QPushButton#btnUpload:hover
+{
+   background-color: #1E88E5; /* Darker blue on hover */
+}
+
+QPushButton#btnUpdateCreateFileAuto:pressed, QPushButton#btnCreateFileAuto:pressed, QPushButton#btnUpload:pressed
+{
+   background-color: #0D47A1; /* Even darker blue */
+}
+
+QPushButton#btnUpdateCreateFileAuto:disabled, QPushButton#btnCreateFileAuto:disabled, QPushButton#btnUpload:disabled
+{
+   background-color: #90CAF9; /* Lighter blue when disabled */
+   color: #E3F2FD;
+   border: none;
+}
+
+QLineEdit, QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #BDBDBD;
+    padding: 4px 6px; /* Adjusted padding */
+    border-radius: 4px;
+    min-height: 22px; /* Adjusted min height */
+    font-size: 10pt;
+}
+
+QLineEdit:focus, QComboBox:focus {
+    border: 1px solid #42A5F5; /* Blue border on focus */
+    /* background-color: #E3F2FD;  Optional: Light blue background on focus */
+}
+
+QLineEdit:read-only {
+    background-color: #F5F5F5;
+    color: #757575;
+}
+
+/* ----- Combo Box Specific ----- */
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px; /* Slightly wider dropdown button */
+    border-left-width: 1px;
+    border-left-color: #BDBDBD;
+    border-left-style: solid;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    background-color: #F5F5F5; /* Light grey background for dropdown arrow area */
+}
+QComboBox::down-arrow {
+     image: url(:/qt-project.org/styles/commonstyle/images/downarraow-16.png); /* Default arrow - check path if needed */
+     width: 10px;
+     height: 10px;
+}
+QComboBox::down-arrow:on { /* shift the arrow when popup is open */
+    top: 1px;
+    left: 1px;
+}
+
+QComboBox:hover {
+    border-color: #9E9E9E; /* Darker border on hover */
+}
+
+/* Style the dropdown list */
+QComboBox QAbstractItemView {
+    border: 1px solid #BDBDBD;
+    background-color: #FFFFFF;
+    selection-background-color: #BBDEFB; /* Light blue selection */
+    selection-color: #212121;
+    padding: 2px;
+}
+
+/* ----- Check Boxes ----- */
+QCheckBox {
+    spacing: 8px; /* More space between indicator and text */
+    font-size: 10pt;
+    background-color: transparent; /* Ensure transparent background */
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #757575; /* Slightly darker border for indicator */
+    border-radius: 3px;
+    background-color: #FFFFFF;
+}
+QCheckBox::indicator:hover {
+     border-color: #42A5F5; /* Blue border on hover */
+}
+QCheckBox::indicator:checked {
+    background-color: #42A5F5; /* Blue check background */
+    border-color: #42A5F5;
+    /* Consider using an SVG icon for better scaling/look */
+    image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0id2hpdGUiIGNsYXNzPSJiaSBiaS1jaGVjayIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNOCAwYS41LjUgMCAwIDAtLjUuNWwtNi41IDYuNWEuNS41IDAgMCAwIC43MDguNzA4TDggMS43MDcgMTMuNzkzIDcuNSA5IDMuNDM1IDguNjQ2IDMuMDY3YS41LjUgMCAwIDAtLjcwOCAwdjEwLjU4NmEuNS41IDAgMCAwIC41LjVoMmEuNS41IDAgMCAwIC41LS41VjguNzA3bDQuNjQ2IDQuNjQ3YS41LjUgMCAwIDAgLjcwOC0uNzA4bC01LjUtNS41YS41LjUgMCAwIDAtLjcwOCAwTDEuNSAxMS4zNTQgMSAxMC44NTZhLjUuNSAwIDAgMC0uNS41eiIvPgo8L3N2Zz4=); /* Embedded white check SVG */
+}
+
+QCheckBox::indicator:checked:hover {
+    border-color: #1E88E5; /* Darker blue */
+    background-color: #1E88E5;
+}
+QCheckBox:disabled {
+    color: #9E9E9E;
+}
+QCheckBox::indicator:disabled {
+    border-color: #E0E0E0;
+    background-color: #F5F5F5;
+}
+QCheckBox::indicator:checked:disabled {
+    background-color: #CFD8DC;
+    border-color: #CFD8DC;
+    image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iIzk4QTU4OCIgY2xhc3M9ImJpIGJpLWNoZWNrIiB2aWV3Qm94PSIwIDAgMTYgMTYiPgogIDxwYXRoIGQ9Ik04IDBhLjUuNSAwIDAgMC0uNS41bC02LjUgNi41YS41LjUgMCAwIDAgLjcwOC43MDhMODEuNzA3IDEzLjc5MyA3LjUgOSAzLjQzNSA4LjY0NiAzLjA2N2EuNS41IDAgMCAwLS43MDggMHYxMC41ODZhLjUuNSAwIDAgMCAuNS41aDJhLjUuNSAwIDAgMCAuNS0uNVY4LjcwN2w0LjY0NiA0LjY0N2EuNS41IDAgMCAwIC43MDgtLjcwOGwtNS41LTUuNWEuNS41IDAgMCAwLS43MDggMEwxLjUgMTEuMzU0IDEgMTAuODU2YS41LjUgMCAwIDAtLjUuNXoiLz4KPC9zdmc+); /* Grey check */
+}
+
+/* ----- Labels ----- */
+QLabel {
+    background-color: transparent; /* Ensure labels have transparent background */
+    padding: 2px; /* Add slight padding for spacing */
+    font-size: 10pt;
+}
+
+/* Specific style for the connection status label */
+QLabel#lblConnectionStatus { /* Renamed from #label */
+    color: #388E3C; /* Darker green for better contrast */
+    font-size: 24pt; /* Make checkmark larger */
+    font-weight: bold;
+    qproperty-alignment: 'AlignCenter';
+}
+</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
       <widget class="QWidget" name="StartFirmwareMenu">
        <attribute name="title">
-        <string>Tab 1</string>
+        <string>Начальная прошивка</string>
        </attribute>
-       <widget class="QComboBox" name="revisionChooseBox">
-        <property name="geometry">
-         <rect>
-          <x>320</x>
-          <y>10</y>
-          <width>141</width>
-          <height>21</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QLabel" name="revisionLabel">
-        <property name="geometry">
-         <rect>
-          <x>260</x>
-          <y>10</y>
-          <width>49</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Ревизия</string>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="clearRevBox">
-        <property name="geometry">
-         <rect>
-          <x>664</x>
-          <y>10</y>
-          <width>81</width>
-          <height>31</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Очистка</string>
-        </property>
-       </widget>
-       <widget class="QGroupBox" name="FileGroupBox">
+       <widget class="QGroupBox" name="grpProgramDataFile">
         <property name="geometry">
          <rect>
           <x>10</x>
           <y>60</y>
-          <width>751</width>
+          <width>761</width>
           <height>131</height>
          </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
         </property>
         <property name="title">
          <string>Файл программы/данных</string>
         </property>
-        <widget class="QPushButton" name="clearFileBoxButton">
-         <property name="geometry">
-          <rect>
-           <x>654</x>
-           <y>20</y>
-           <width>81</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Очистить</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="chooseFileButton">
+        <widget class="QPushButton" name="btnChooseProgramDataFile">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>30</y>
-           <width>111</width>
-           <height>31</height>
+           <width>121</width>
+           <height>34</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
          </property>
          <property name="text">
           <string>Выбрать файл</string>
          </property>
         </widget>
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="lblProgramDataFileSize">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>100</y>
-           <width>101</width>
-           <height>16</height>
+           <width>721</width>
+           <height>21</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="text">
           <string>Размер: -</string>
          </property>
         </widget>
-        <widget class="QLabel" name="fileLabel">
+        <widget class="QLabel" name="lblProgramDataFileName">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>70</y>
-           <width>101</width>
-           <height>16</height>
+           <width>721</width>
+           <height>21</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="text">
           <string>Файл: -</string>
          </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
         </widget>
        </widget>
-       <widget class="QGroupBox" name="groupBox_2">
+       <widget class="QLabel" name="lblRevision">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>25</y>
+          <width>61</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Ревизия:</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="cmbRevision">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>20</y>
+          <width>531</width>
+          <height>32</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="grpParameters">
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>200</y>
-          <width>751</width>
-          <height>411</height>
+          <y>350</y>
+          <width>531</width>
+          <height>251</height>
          </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
         </property>
         <property name="title">
          <string>Параметры</string>
         </property>
-        <widget class="QComboBox" name="comboBox_2">
-         <property name="geometry">
-          <rect>
-           <x>190</x>
-           <y>20</y>
-           <width>161</width>
-           <height>22</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_4">
+        <widget class="QGroupBox" name="grpSerialNumbers">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>20</y>
-           <width>111</width>
-           <height>16</height>
+           <y>25</y>
+           <width>501</width>
+           <height>171</height>
           </rect>
          </property>
-         <property name="text">
-          <string>Модель устройства:</string>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
+         <property name="title">
+          <string>Серийные номера</string>
+         </property>
+         <widget class="QCheckBox" name="chkUpdateCrc32">
+          <property name="geometry">
+           <rect>
+            <x>350</x>
+            <y>120</y>
+            <width>131</width>
+            <height>41</height>
+           </rect>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Обновить CRC32</string>
+          </property>
+         </widget>
+         <widget class="QWidget" name="layoutWidget">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>30</y>
+            <width>311</width>
+            <height>131</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="lblInitialSerialNumber">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Начальный номер:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="editInitialSerialNumber"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="lblNumberOfSerials">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Число номеров:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="editNumberOfSerials"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="lblNewCrc32">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Новая CRC32 (без 0x):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="editNewCrc32"/>
+           </item>
+          </layout>
+         </widget>
         </widget>
-        <widget class="QLabel" name="label_5">
+        <widget class="QLabel" name="lblTotalFirmwareSize">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>60</y>
-           <width>131</width>
-           <height>16</height>
+           <y>210</y>
+           <width>721</width>
+           <height>21</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="text">
-          <string>Описатель устройства:</string>
+          <string>Суммарный размер файла прошивки: -</string>
          </property>
         </widget>
-        <widget class="QLineEdit" name="lineEdit">
+       </widget>
+       <widget class="QPushButton" name="btnCreateFileManual">
+        <property name="geometry">
+         <rect>
+          <x>640</x>
+          <y>620</y>
+          <width>121</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Создать файл</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnCreateFileAuto">
+        <property name="geometry">
+         <rect>
+          <x>460</x>
+          <y>620</y>
+          <width>161</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Создать файл (Авто)</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnShowInfo">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>620</y>
+          <width>75</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Инфо</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="grpLoaderFile">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>200</y>
+          <width>761</width>
+          <height>141</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="title">
+         <string>Загрузчик</string>
+        </property>
+        <widget class="QPushButton" name="btnChooseLoaderFile">
          <property name="geometry">
           <rect>
-           <x>190</x>
-           <y>60</y>
-           <width>161</width>
-           <height>22</height>
+           <x>10</x>
+           <y>30</y>
+           <width>121</width>
+           <height>34</height>
           </rect>
          </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="text">
+          <string>Выбрать файл</string>
+         </property>
         </widget>
-        <widget class="QLabel" name="label_6">
+        <widget class="QLabel" name="lblLoaderFileSize">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>100</y>
-           <width>131</width>
-           <height>16</height>
+           <width>721</width>
+           <height>21</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="text">
-          <string>Серийный номер S/N:</string>
+          <string>Размер: -</string>
          </property>
         </widget>
-        <widget class="QLineEdit" name="lineEdit_2">
-         <property name="geometry">
-          <rect>
-           <x>190</x>
-           <y>100</y>
-           <width>161</width>
-           <height>22</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_7">
+        <widget class="QLabel" name="lblLoaderFileName">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>140</y>
-           <width>171</width>
-           <height>16</height>
+           <y>70</y>
+           <width>721</width>
+           <height>21</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="text">
-          <string>Аппаратный идентификатор:</string>
+          <string>Файл: -</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
         </widget>
-        <widget class="QLabel" name="label_8">
+       </widget>
+       <widget class="QPushButton" name="btnClearRevision">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>20</y>
+          <width>91</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Очистка</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnConnect">
+        <property name="geometry">
+         <rect>
+          <x>640</x>
+          <y>390</y>
+          <width>121</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="mouseTracking">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Подключить</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnUpload">
+        <property name="geometry">
+         <rect>
+          <x>640</x>
+          <y>430</y>
+          <width>121</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Загрузить</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="lblConnectionStatus">
+        <property name="geometry">
+         <rect>
+          <x>590</x>
+          <y>390</y>
+          <width>41</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="palette">
+         <palette>
+          <active>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Button">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Text">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="ButtonText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Base">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Window">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="PlaceholderText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="128">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </active>
+          <inactive>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Button">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Text">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="ButtonText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Base">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Window">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="PlaceholderText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="128">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </inactive>
+          <disabled>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Button">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Text">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="ButtonText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Base">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Window">
+            <brush brushstyle="SolidPattern">
+             <color alpha="0">
+              <red>0</red>
+              <green>0</green>
+              <blue>0</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="PlaceholderText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="128">
+              <red>56</red>
+              <green>142</green>
+              <blue>60</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </disabled>
+         </palette>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>24</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">/* Style applied via global QSS, removing inline */</string>
+        </property>
+        <property name="text">
+         <string>✓</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="UpdateFirmwareMenu">
+       <attribute name="title">
+        <string>Обновление прошивки</string>
+       </attribute>
+       <widget class="QComboBox" name="cmbUpdateRevision">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>20</y>
+          <width>531</width>
+          <height>32</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+       </widget>
+       <widget class="QLabel" name="lblUpdateRevision">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>20</y>
+          <width>61</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Ревизия:</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnClearUpdateRevision">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>20</y>
+          <width>91</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Очистка</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="grpUpdateProgramDataFile">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>60</y>
+          <width>761</width>
+          <height>131</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="title">
+         <string>Файл программы/данных</string>
+        </property>
+        <widget class="QPushButton" name="btnClearUpdateProgramDataFile">
          <property name="geometry">
           <rect>
-           <x>10</x>
-           <y>180</y>
-           <width>181</width>
-           <height>16</height>
+           <x>650</x>
+           <y>30</y>
+           <width>91</width>
+           <height>34</height>
           </rect>
          </property>
-         <property name="text">
-          <string>Начальный адрес для стирания:</string>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
-        </widget>
-        <widget class="QLabel" name="label_9">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>220</y>
-           <width>181</width>
-           <height>16</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Конечный адрес для стирания:</string>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="lineEdit_3">
-         <property name="geometry">
-          <rect>
-           <x>190</x>
-           <y>140</y>
-           <width>161</width>
-           <height>22</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="lineEdit_4">
-         <property name="geometry">
-          <rect>
-           <x>190</x>
-           <y>180</y>
-           <width>161</width>
-           <height>22</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="lineEdit_5">
-         <property name="geometry">
-          <rect>
-           <x>190</x>
-           <y>220</y>
-           <width>161</width>
-           <height>22</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pushButton_4">
-         <property name="geometry">
-          <rect>
-           <x>654</x>
-           <y>20</y>
-           <width>81</width>
-           <height>31</height>
-          </rect>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
          </property>
          <property name="text">
           <string>Очистить</string>
          </property>
         </widget>
-        <widget class="QLabel" name="label_10">
+        <widget class="QPushButton" name="btnChooseUpdateProgramDataFile">
          <property name="geometry">
           <rect>
-           <x>370</x>
-           <y>180</y>
-           <width>181</width>
-           <height>16</height>
+           <x>10</x>
+           <y>30</y>
+           <width>121</width>
+           <height>34</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="text">
+          <string>Выбрать файл</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblUpdateProgramDataFileSize">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>100</y>
+           <width>721</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Размер: -</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblUpdateProgramDataFileName">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>70</y>
+           <width>721</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Файл: -</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QGroupBox" name="grpUpdateParameters">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>200</y>
+          <width>761</width>
+          <height>411</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="title">
+         <string>Параметры</string>
+        </property>
+        <widget class="QComboBox" name="cmbDeviceModel">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>25</y>
+           <width>161</width>
+           <height>32</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblDeviceModel">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>29</y>
+           <width>131</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Модель устройства:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblDeviceDescriptor">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>69</y>
+           <width>141</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Описатель устройства:</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="editDeviceDescriptor">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>65</y>
+           <width>161</width>
+           <height>32</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblSerialNumber">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>109</y>
+           <width>141</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Серийный номер S/N:</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="editSerialNumber">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>105</y>
+           <width>161</width>
+           <height>32</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblHardwareId">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>149</y>
+           <width>181</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Аппаратный идентификатор:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblEraseStartAddress">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>189</y>
+           <width>201</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Начальный адрес для стирания:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblEraseEndAddress">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>229</y>
+           <width>191</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Конечный адрес для стирания:</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="editHardwareId">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>145</y>
+           <width>161</width>
+           <height>32</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="editEraseStartAddress">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>185</y>
+           <width>161</width>
+           <height>32</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="editEraseEndAddress">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>225</y>
+           <width>161</width>
+           <height>32</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="btnClearUpdateParameters">
+         <property name="geometry">
+          <rect>
+           <x>650</x>
+           <y>30</y>
+           <width>91</width>
+           <height>34</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="text">
+          <string>Очистить</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblProgramStartAddress">
+         <property name="geometry">
+          <rect>
+           <x>390</x>
+           <y>189</y>
+           <width>191</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="text">
           <string>Начальный адрес программы:</string>
          </property>
         </widget>
-        <widget class="QLineEdit" name="lineEdit_6">
+        <widget class="QLineEdit" name="editProgramStartAddress">
          <property name="geometry">
           <rect>
-           <x>550</x>
-           <y>180</y>
-           <width>181</width>
-           <height>22</height>
+           <x>580</x>
+           <y>190</y>
+           <width>161</width>
+           <height>32</height>
           </rect>
          </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
         </widget>
-        <widget class="QGroupBox" name="groupBox_3">
+        <widget class="QGroupBox" name="grpCommands">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>250</y>
+           <y>260</y>
            <width>231</width>
-           <height>151</height>
+           <height>141</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="title">
           <string>Команды</string>
          </property>
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QWidget" name="layoutWidget_2">
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>30</y>
-            <width>151</width>
-            <height>20</height>
+            <y>25</y>
+            <width>211</width>
+            <height>111</height>
            </rect>
           </property>
-          <property name="text">
-           <string>Основная программа</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_2">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>60</y>
-            <width>181</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Только для указанного S/N</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_3">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>90</y>
-            <width>191</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Только для указанного DevID</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_4">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>120</y>
-            <width>191</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Без проверки модели</string>
-          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QCheckBox" name="chkMainProgram">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Основная программа</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkOnlyForSelectedSN">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Только для указанного S/N</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkOnlyForSelectedDevId">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Только для указанного DevID</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkNoModelCheck">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Без проверки модели</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </widget>
-        <widget class="QGroupBox" name="groupBox_4">
+        <widget class="QGroupBox" name="grpAdditionalOptions">
          <property name="geometry">
           <rect>
-           <x>260</x>
-           <y>250</y>
-           <width>481</width>
-           <height>151</height>
+           <x>250</x>
+           <y>260</y>
+           <width>501</width>
+           <height>141</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
          </property>
          <property name="title">
           <string>Дополнительно</string>
          </property>
-         <widget class="QCheckBox" name="checkBox_12">
+         <widget class="QWidget" name="layoutWidget_3">
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>60</y>
-            <width>201</width>
-            <height>20</height>
+            <y>25</y>
+            <width>481</width>
+            <height>111</height>
            </rect>
           </property>
-          <property name="text">
-           <string>Сохранять &quot;ВТН адрес прибора&quot;</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_11">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>120</y>
-            <width>211</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Сохранять &quot;версия апп. прибора&quot;</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_9">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>90</y>
-            <width>201</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Сохранять &quot;описание прибора&quot;</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_10">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>30</y>
-            <width>201</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Сохранять &quot;ВТН имя прибора&quot;</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_13">
-          <property name="geometry">
-           <rect>
-            <x>240</x>
-            <y>90</y>
-            <width>191</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Сохранять &quot;модель прибора&quot;</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_14">
-          <property name="geometry">
-           <rect>
-            <x>240</x>
-            <y>30</y>
-            <width>221</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Сохранять &quot;версия прош. прибора</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_15">
-          <property name="geometry">
-           <rect>
-            <x>240</x>
-            <y>120</y>
-            <width>221</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Включить защиту памяти &quot;Level1&quot;</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="checkBox_16">
-          <property name="geometry">
-           <rect>
-            <x>240</x>
-            <y>60</y>
-            <width>211</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Сохранять &quot;сер. номер прибора&quot;</string>
-          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="chkSaveVtnDeviceName">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;ВТН имя прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="chkSaveFwVersion">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;версия прош. прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="chkSaveVtnDeviceAddress">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;ВТН адрес прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="chkSaveSerialNumber">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;сер. номер прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="chkSaveDeviceDescription">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;описание прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QCheckBox" name="chkSaveDeviceModel">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;модель прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QCheckBox" name="chkSaveHwVersion">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сохранять &quot;версия апп. прибора&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QCheckBox" name="chkEnableMemoryProtectionL1">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Включить защиту памяти &quot;Level1&quot;</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </widget>
        </widget>
-      </widget>
-      <widget class="QWidget" name="UpdateFirmwareMenu">
-       <attribute name="title">
-        <string>Tab 2</string>
-       </attribute>
+       <widget class="QPushButton" name="btnUpdateShowInfo">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>620</y>
+          <width>75</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Инфо</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnUpdateCreateFileAuto">
+        <property name="geometry">
+         <rect>
+          <x>460</x>
+          <y>620</y>
+          <width>161</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Создать файл (Авто)</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnUpdateCreateFileManual">
+        <property name="geometry">
+         <rect>
+          <x>640</x>
+          <y>620</y>
+          <width>121</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Создать файл</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnCreateCommonUpdateFile">
+        <property name="geometry">
+         <rect>
+          <x>200</x>
+          <y>620</y>
+          <width>241</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Создать общий файл обновления</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="StartFirmwareCableMenu">
        <attribute name="title">
-        <string>Страница</string>
+        <string>Начальная прошивка кабеля</string>
        </attribute>
+       <widget class="QLabel" name="lblCablePlaceholder">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>20</y>
+          <width>400</width>
+          <height>30</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: grey;</string>
+        </property>
+        <property name="text">
+         <string>Раздел находится в разработке...</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
       </widget>
      </widget>
     </item>
