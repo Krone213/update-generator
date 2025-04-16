@@ -6,7 +6,6 @@
 #include <QApplication>
 #include <QTimer>
 #include <QShowEvent>
-#include <QCheckBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
