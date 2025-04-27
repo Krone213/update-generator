@@ -463,7 +463,7 @@ QLabel#lblConnectionStatus {
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabBarAutoHide">
        <bool>false</bool>
@@ -618,6 +618,9 @@ QLabel#lblConnectionStatus {
           <string>Серийные номера</string>
          </property>
          <widget class="QCheckBox" name="chkUpdateCrc32">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
           <property name="geometry">
            <rect>
             <x>350</x>
@@ -634,6 +637,9 @@ QLabel#lblConnectionStatus {
           <property name="text">
            <string>Обновить CRC32</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
          <widget class="QLineEdit" name="editNumberOfSerials">
           <property name="geometry">
@@ -643,6 +649,9 @@ QLabel#lblConnectionStatus {
             <width>160</width>
             <height>32</height>
            </rect>
+          </property>
+          <property name="text">
+           <string>1</string>
           </property>
          </widget>
          <widget class="QLineEdit" name="editInitialSerialNumber">
@@ -654,6 +663,9 @@ QLabel#lblConnectionStatus {
             <height>32</height>
            </rect>
           </property>
+          <property name="text">
+           <string>2300511</string>
+          </property>
          </widget>
          <widget class="QLineEdit" name="editNewCrc32">
           <property name="geometry">
@@ -663,6 +675,9 @@ QLabel#lblConnectionStatus {
             <width>160</width>
             <height>32</height>
            </rect>
+          </property>
+          <property name="text">
+           <string>880F7E60</string>
           </property>
          </widget>
          <widget class="QLabel" name="lblNewCrc32">
@@ -1530,6 +1545,9 @@ QLabel#lblConnectionStatus {
            <pointsize>10</pointsize>
           </font>
          </property>
+         <property name="text">
+          <string>0</string>
+         </property>
         </widget>
         <widget class="QLineEdit" name="editEraseEndAddress">
          <property name="geometry">
@@ -1544,6 +1562,9 @@ QLabel#lblConnectionStatus {
           <font>
            <pointsize>10</pointsize>
           </font>
+         </property>
+         <property name="text">
+          <string>0</string>
          </property>
         </widget>
         <widget class="QPushButton" name="btnClearUpdateParameters">
@@ -1628,7 +1649,7 @@ QLabel#lblConnectionStatus {
           </property>
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
-            <widget class="QCheckBox" name="chkMainProgram">
+            <widget class="QCheckBox" name="main_prog">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1640,7 +1661,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkOnlyForSelectedSN">
+            <widget class="QCheckBox" name="OnlyForEnteredSN">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1652,7 +1673,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkOnlyForSelectedDevId">
+            <widget class="QCheckBox" name="OnlyForEnteredDevID">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1664,7 +1685,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkNoModelCheck">
+            <widget class="QCheckBox" name="NoCheckModel">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1700,13 +1721,13 @@ QLabel#lblConnectionStatus {
            <rect>
             <x>10</x>
             <y>25</y>
-            <width>481</width>
+            <width>483</width>
             <height>111</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
            <item row="0" column="0">
-            <widget class="QCheckBox" name="chkSaveVtnDeviceName">
+            <widget class="QCheckBox" name="SaveBthName">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1718,7 +1739,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QCheckBox" name="chkSaveFwVersion">
+            <widget class="QCheckBox" name="SaveSwVerr">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1730,7 +1751,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QCheckBox" name="chkSaveVtnDeviceAddress">
+            <widget class="QCheckBox" name="SaveBthAddr">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1742,7 +1763,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QCheckBox" name="chkSaveSerialNumber">
+            <widget class="QCheckBox" name="SaveDevSerial">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1754,7 +1775,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QCheckBox" name="chkSaveDeviceDescription">
+            <widget class="QCheckBox" name="SaveDevDesc">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1766,7 +1787,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QCheckBox" name="chkSaveDeviceModel">
+            <widget class="QCheckBox" name="SaveDevModel">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1778,7 +1799,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QCheckBox" name="chkSaveHwVersion">
+            <widget class="QCheckBox" name="SaveHwVerr">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
@@ -1790,7 +1811,7 @@ QLabel#lblConnectionStatus {
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QCheckBox" name="chkEnableMemoryProtectionL1">
+            <widget class="QCheckBox" name="Lvl1MemProtection">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
