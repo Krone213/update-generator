@@ -322,17 +322,17 @@ QPushButton#btnUpdateCreateFileAuto, QPushButton#btnCreateFileAuto, QPushButton#
    font-weight: bold;
 }
 
-QPushButton#btnUpdateCreateFileAuto:hover, QPushButton#btnCreateFileAuto:hover, QPushButton#btnUpload:hover
+QPushButton#btnUpdateCreateFileAuto:hover, QPushButton#btnCreateFileAuto:hover, QPushButton#btnConnectAndUpload:hover
 {
    background-color: #1E88E5; /* Darker blue on hover */
 }
 
-QPushButton#btnUpdateCreateFileAuto:pressed, QPushButton#btnCreateFileAuto:pressed, QPushButton#btnUpload:pressed
+QPushButton#btnUpdateCreateFileAuto:pressed, QPushButton#btnCreateFileAuto:pressed, QPushButton#btnConnectAndUpload:pressed
 {
    background-color: #0D47A1; /* Even darker blue */
 }
 
-QPushButton#btnUpdateCreateFileAuto:disabled, QPushButton#btnCreateFileAuto:disabled, QPushButton#btnUpload:disabled
+QPushButton#btnUpdateCreateFileAuto:disabled, QPushButton#btnCreateFileAuto:disabled, QPushButton#btnConnectAndUpload:disabled
 {
    background-color: #90CAF9; /* Lighter blue when disabled */
    color: #E3F2FD;
