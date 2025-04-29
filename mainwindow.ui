@@ -314,7 +314,7 @@ QPushButton:disabled {
     border-color: #E0E0E0;
 }
 
-QPushButton#btnUpdateCreateFileAuto, QPushButton#btnCreateFileAuto, QPushButton#btnUpload
+QPushButton#btnUpdateCreateFileAuto, QPushButton#btnCreateFileAuto, QPushButton#btnConnectAndUpload
 {
    background-color: #42A5F5; /* Accent blue */
    color: white;
@@ -463,7 +463,7 @@ QLabel#lblConnectionStatus {
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="tabBarAutoHide">
        <bool>false</bool>
@@ -753,36 +753,12 @@ QLabel#lblConnectionStatus {
           <string>Суммарный размер файла прошивки: -</string>
          </property>
         </widget>
-        <widget class="QPushButton" name="btnConnect">
+        <widget class="QPushButton" name="btnConnectAndUpload">
          <property name="geometry">
           <rect>
-           <x>630</x>
+           <x>560</x>
            <y>40</y>
-           <width>121</width>
-           <height>34</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="cursor">
-          <cursorShape>PointingHandCursor</cursorShape>
-         </property>
-         <property name="mouseTracking">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>Подключить</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="btnUpload">
-         <property name="geometry">
-          <rect>
-           <x>630</x>
-           <y>80</y>
-           <width>121</width>
+           <width>191</width>
            <height>34</height>
           </rect>
          </property>
@@ -796,13 +772,13 @@ QLabel#lblConnectionStatus {
           <cursorShape>PointingHandCursor</cursorShape>
          </property>
          <property name="text">
-          <string>Загрузить</string>
+          <string>Подключить и загрузить</string>
          </property>
         </widget>
         <widget class="QLabel" name="lblConnectionStatus">
          <property name="geometry">
           <rect>
-           <x>580</x>
+           <x>520</x>
            <y>40</y>
            <width>41</width>
            <height>31</height>

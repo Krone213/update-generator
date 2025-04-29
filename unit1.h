@@ -8,6 +8,11 @@
     #include <QMap>             // Для revisionsMap
     #include <QSet>             // Для autoSavePaths
     #include <QMessageBox>      // Для сообщений
+    #include <QProcess>
+    #include <QFileDialog>      // <--- Добавлено для диалога выбора файла
+    #include <QDir>             // <--- Добавлено для работы с путями
+    #include <QStringList>
+    #include <QTemporaryFile>
 
     // --- Оригинальная структура для Unit1 ---
     struct RevisionInfo {
@@ -22,6 +27,7 @@
 
     public:
         explicit Unit1(Ui::MainWindow *ui, QObject *parent = nullptr);
+        ~Unit1();
 
     private:
         Ui::MainWindow *ui;
@@ -43,6 +49,29 @@
         void updateTotalFirmwareSize();
         void createFirmwareFiles(const QString &outputDir); // Использует внутреннее состояние
 
+        // Функция подключения ST-Link
+
+        QString cliSubfolder = "ST-LINK";
+        QString cliExecutable = "ST-LINK_CLI.exe";
+
+        #ifdef Q_OS_WIN
+        // Для Windows путь собирается просто
+        QString m_stLinkCliPath = QDir::toNativeSeparators(QCoreApplication::applicationDirPath() + QDir::separator() + cliSubfolder + QDir::separator() + cliExecutable);
+        #else
+        QString m_stLinkCliPath = QCoreApplication::applicationDirPath() + QDir::separator() + cliSubfolder + QDir::separator() + cliExecutable;
+        #endif
+
+        QProcess *m_stLinkProcess = nullptr;
+        QString m_firmwareFilePath; // <--- Добавлено: путь к выбранной прошивке
+        QStringList m_currentCommandArgs;
+
+        // --- Для повторных попыток подключения ---
+        QTimer *m_retryTimer = nullptr;         // Таймер задержки между попытками
+        const int m_maxProgramAttempts = 3;     // Максимальное количество попыток
+        int m_programAttemptsLeft = 0;          // Счетчик оставшихся попыток
+
+        void executeProgramAttempt();
+
 
     public slots:
         // --- Слоты из оригинала ---
@@ -50,17 +79,20 @@
         void onBtnChooseLoaderFileClicked();
         void onBtnShowInfoClicked();
         void onBtnClearRevisionClicked(); // Обрабатывается внутри Unit1
-        void onBtnConnectClicked();
-        void onBtnUploadClicked();
+        void onBtnConnectAndUploadClicked();
         void hideConnectionStatus();
         void onBtnCreateFileManualClicked();
         void onBtnCreateFileAutoClicked(); // Обрабатывается внутри Unit1
         void onRevisionChanged(int index);
 
     private slots:
-        // --- Слот из оригинала ---
+        void handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus);
+        void handleStLinkError(QProcess::ProcessError error);
+        void handleStLinkStdOut();
+        void handleStLinkStdErr();
 
-
+        void retryProgramAttempt();
+        void cleanupTemporaryFile();
     };
 
     #endif // UNIT1_H

@@ -2,15 +2,6 @@
 #include "ui_mainwindow.h"
 #include "unit1.h" // Include Unit1 header
 #include "unit2.h" // Include Unit2 header
-#include <QFile>
-#include <QDomDocument>
-#include <QMessageBox>
-#include <QDebug>
-#include <QComboBox>   // Include QComboBox header
-#include <QCheckBox>   // Include QCheckBox header
-#include <QDir>        // Include QDir for path manipulation
-#include <QFileDialog> // Include QFileDialog
-#include <QSet>        // Include QSet for collecting unique models
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -75,8 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnCreateFileAuto, &QPushButton::clicked, unit1, &Unit1::onBtnCreateFileAutoClicked);
     connect(ui->btnShowInfo, &QPushButton::clicked, unit1, &Unit1::onBtnShowInfoClicked);
     connect(ui->btnClearRevision, &QPushButton::clicked, unit1, &Unit1::onBtnClearRevisionClicked);
-    connect(ui->btnConnect, &QPushButton::clicked, unit1, &Unit1::onBtnConnectClicked);
-    connect(ui->btnUpload, &QPushButton::clicked, unit1, &Unit1::onBtnUploadClicked);
+    connect(ui->btnConnectAndUpload, &QPushButton::clicked, unit1, &Unit1::onBtnConnectAndUploadClicked);
 
     // --- Подключения кнопок Unit2 (ИЗ ВАШЕГО КОДА + АВТО) ---
     connect(ui->btnChooseUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnChooseUpdateProgramDataFileClicked);
@@ -180,7 +170,6 @@ void MainWindow::handleDeviceModelComboBoxChanged(int /*index*/) {
     synchronizeComboBoxes(sender());
 }
 
-// --- Централизованная синхронизация ---
 // --- Централизованная синхронизация ---
 void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
     QComboBox* changedComboBox = qobject_cast<QComboBox*>(senderComboBox);

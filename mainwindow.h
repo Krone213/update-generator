@@ -8,6 +8,15 @@
 #include <QShowEvent>
 #include <QMap>
 #include <QSet>
+#include <QFile>
+#include <QDomDocument>
+#include <QMessageBox>
+#include <QDebug>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QDir>
+#include <QFileDialog>
+
 #include "config_data.h" // Используем расширенную структуру
 
 QT_BEGIN_NAMESPACE

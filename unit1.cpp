@@ -7,17 +7,33 @@
 #include "crcunit.h"   // Убедитесь, что включен и содержит calcCrc32/calcCrc32_intermediate
 #include <QDebug>      // Для qDebug/qWarning
 #include <QtEndian>    // Для qToLittleEndian и работы с байтами
-#include <cstring>     // Для memcpy/memset
-#include <QRegularExpression> // Для очистки имени файла
+#include <cstring>
+#include <QRegularExpression>
+#include <QCoreApplication>
+#include <QDir>
+#include <QDateTime>
+#include <QMessageBox>
 
 
 Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
-    : QObject(parent), ui(ui)
+    : QObject(parent), ui(ui),
+    m_firmwareFilePath("")
 {
     // Инициализация таймера
     statusTimer = new QTimer(this);
     statusTimer->setSingleShot(true);
     connect(statusTimer, &QTimer::timeout, this, &Unit1::hideConnectionStatus);
+
+    m_stLinkProcess = new QProcess(this);
+    connect(m_stLinkProcess, &QProcess::finished, this, &Unit1::handleStLinkFinished);
+    connect(m_stLinkProcess, &QProcess::errorOccurred, this, &Unit1::handleStLinkError);
+    connect(m_stLinkProcess, &QProcess::readyReadStandardOutput, this, &Unit1::handleStLinkStdOut);
+    connect(m_stLinkProcess, &QProcess::readyReadStandardError, this, &Unit1::handleStLinkStdErr);
+
+    m_retryTimer = new QTimer(this);
+    m_retryTimer->setInterval(2000); // Задержка 2 секунды
+    m_retryTimer->setSingleShot(true); // Сработает один раз
+    connect(m_retryTimer, &QTimer::timeout, this, &Unit1::retryProgramAttempt); // Соединяем таймер со слотом повтор
 
     // Скрываем метку по умолчанию
     ui->lblConnectionStatus->setVisible(false);
@@ -31,23 +47,260 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     onRevisionChanged(-1); // Обновить UI для состояния "нет выбора"
 }
 
-void Unit1::onBtnConnectClicked()
+Unit1::~Unit1()
 {
-    // Реализация логики из оригинала
-    bool success = true;  // Успешное подключение (placeholder)
-    // bool success = false;  // Ошибка подключения (placeholder)
-    ui->lblConnectionStatus->setText(success ? "<font color='green'><b>✓</b></font>" : "<font color='red'><b>✗</b></font>");
+    if (m_stLinkProcess && m_stLinkProcess->state() != QProcess::NotRunning) {
+        m_stLinkProcess->kill();
+    }
+}
+
+void Unit1::cleanupTemporaryFile() {
+    if (!m_firmwareFilePath.isEmpty() && m_firmwareFilePath.contains("temp_firmware")) { // Проверяем, что это наш временный файл
+        qDebug() << "Удаление временного файла:" << m_firmwareFilePath;
+        QFile tempFile(m_firmwareFilePath);
+        if (!tempFile.remove()) {
+            qWarning() << "Не удалось удалить временный файл:" << m_firmwareFilePath << tempFile.errorString();
+        }
+        // Пробуем удалить и папку, если она пуста (не критично, если не получится)
+        QFileInfo tempFileInfo(m_firmwareFilePath);
+        QDir tempDir = tempFileInfo.dir();
+        tempDir.rmdir(tempDir.path()); // rmdir удалит, только если папка пуста
+
+        m_firmwareFilePath.clear(); // Очищаем путь в любом случае
+    }
+    m_currentCommandArgs.clear();
+}
+
+void Unit1::onBtnConnectAndUploadClicked()
+{
+    if (m_stLinkProcess->state() != QProcess::NotRunning) {
+        qDebug() << "Процесс ST-Link уже запущен.";
+        return;
+    }
+    if (!QFile::exists(m_stLinkCliPath)) {
+        qDebug() << "ST-LINK_CLI.exe не найден.";
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗ (Нет CLI)</b></font>");
+        ui->lblConnectionStatus->setVisible(true);
+        statusTimer->start(2000);
+        return;
+    }
+
+    // --- Выбор файла прошивки ---
+    QString originalFirmwarePath;
+    QString defaultDir = QDir::currentPath() + "/Файл Прошивки CPU1/"; // Можно оставить как есть или улучшить
+    QDir testDir(defaultDir);
+    if (!testDir.exists()) {
+        defaultDir = QDir::currentPath();
+    }
+    originalFirmwarePath = QFileDialog::getOpenFileName(
+        nullptr,
+        tr("Выберите файл прошивки CPU1"),
+        defaultDir,
+        tr("Файлы прошивки (*.bin *.hex);;Все файлы (*.*)")
+        );
+
+    if (originalFirmwarePath.isEmpty()) {
+        qDebug() << "Выбор файла отменен.";
+        return;
+    }
+    qDebug() << "Выбран оригинальный файл прошивки:" << originalFirmwarePath;
+
+    // --- Подготовка временного пути ---
+    QString appDir = QCoreApplication::applicationDirPath();
+    QString tempSubDir = "temp_firmware";
+    QDir tempDir(appDir);
+
+    // Создаем подпапку, если ее нет
+    if (!tempDir.exists(tempSubDir)) {
+        if (!tempDir.mkdir(tempSubDir)) {
+            qCritical() << "Не удалось создать временную папку:" << tempDir.filePath(tempSubDir);
+            QMessageBox::critical(nullptr, "Ошибка", "Не удалось создать временную папку для прошивки.");
+            return;
+        }
+        qDebug() << "Создана временная папка:" << tempDir.filePath(tempSubDir);
+    } else {
+        qDebug() << "Временная папка уже существует:" << tempDir.filePath(tempSubDir);
+    }
+
+    // Генерируем простое имя файла
+    QFileInfo originalFileInfo(originalFirmwarePath);
+    QString suffix = originalFileInfo.suffix().isEmpty() ? "tmp" : originalFileInfo.suffix(); // Расширение
+    QString simpleFileName = QString("upload_%1.%2")
+                                 .arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz"))
+                                 .arg(suffix);
+    QString temporaryFirmwarePath = tempDir.filePath(tempSubDir + "/" + simpleFileName); // Полный путь к временному файлу
+
+    qDebug() << "Целевой временный путь:" << temporaryFirmwarePath;
+
+    // --- Копирование ---
+    // Удаляем старый временный файл с таким же именем, если вдруг остался
+    QFile::remove(temporaryFirmwarePath);
+
+    qDebug() << "Попытка копирования из" << originalFirmwarePath << "в" << temporaryFirmwarePath;
+    if (!QFile::copy(originalFirmwarePath, temporaryFirmwarePath)) {
+        QFile checkSource(originalFirmwarePath);
+        QString errorDetails = checkSource.errorString(); // Попробуем получить ошибку от QFile
+        qCritical() << "Не удалось скопировать файл прошивки во временную папку."
+                    << "Источник:" << originalFirmwarePath << "Назначение:" << temporaryFirmwarePath
+                    << "Ошибка QFile:" << errorDetails;
+
+        // Сообщаем пользователю о проблеме и предлагаем решение
+        QMessageBox::warning(nullptr, "Ошибка копирования",
+                             QString("Не удалось скопировать файл прошивки:\n%1\n\n"
+                                     "Возможные причины:\n"
+                                     "- Недостаточно прав доступа к исходному файлу.\n"
+                                     "- Путь к исходному файлу содержит символы, которые не поддерживаются системой или приложением на этом этапе.\n"
+                                     "- Файл используется другим процессом.\n\n"
+                                     "Рекомендация:\n"
+                                     "Попробуйте поместить файл прошивки в папку с простым путем (например, C:\\FW\\) и повторите попытку.")
+                                 .arg(originalFileInfo.fileName()) // Показываем только имя файла в сообщении
+                             );
+
+        // Очистка, если временный файл создался, но копирование не удалось
+        QFile::remove(temporaryFirmwarePath);
+        return; // Прерываем операцию
+    }
+
+    qDebug() << "Файл успешно скопирован во временный:" << temporaryFirmwarePath;
+
+    // --- Используем временный путь для команды ---
+    m_firmwareFilePath = temporaryFirmwarePath; // Сохраняем временный путь для ST-Link и очистки
+
+    // --- Формирование АРГУМЕНТОВ (используя m_firmwareFilePath) ---
+    m_currentCommandArgs.clear();
+    m_currentCommandArgs << "-c" << "SWD" << "Freq=4000" << "UR";
+    m_currentCommandArgs << "-P" << m_firmwareFilePath << "0x08000000"; // Адрес !!!
+    m_currentCommandArgs << "-V" << "-Rst";
+
+    // --- Начало процесса программирования ---
+    qDebug() << "--- Начало серии попыток программирования (с файлом в подпапке приложения) ---";
+    ui->btnConnectAndUpload->setEnabled(false);
+    ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка...</b></font>");
     ui->lblConnectionStatus->setVisible(true);
-    statusTimer->start(2000);  // Показать метку на 2 секунды
+    statusTimer->stop();
+    m_retryTimer->stop();
+    m_programAttemptsLeft = m_maxProgramAttempts;
+    executeProgramAttempt();
 }
 
-void Unit1::onBtnUploadClicked()
+void Unit1::executeProgramAttempt()
 {
-    qDebug() << "Upload button clicked (Unit1)";
-    // Здесь логика для btnUpload (placeholder)
-    QMessageBox::information(ui->btnUpload->window(), "Загрузка", "Логика загрузки прошивки еще не реализована.");
+    if (m_programAttemptsLeft <= 0) {
+        qDebug() << "Нет оставшихся попыток программирования.";
+        // Это не должно происходить при правильной логике, но на всякий случай
+        ui->btnConnectAndUpload->setEnabled(true);
+        return;
+    }
+
+    qDebug() << "Попытка программирования (" << (m_maxProgramAttempts - m_programAttemptsLeft + 1) << "/" << m_maxProgramAttempts << ")...";
+    m_programAttemptsLeft--; // Уменьшаем счетчик ПЕРЕД попыткой
+
+    m_stLinkProcess->readAllStandardOutput(); // Очистка буферов
+    m_stLinkProcess->readAllStandardError();
+
+    qDebug() << "Запуск ST-LINK CLI:" << m_stLinkCliPath << m_currentCommandArgs.join(" ");
+    m_stLinkProcess->start(m_stLinkCliPath, m_currentCommandArgs); // Используем сохраненные аргументы
 }
 
+
+// --- Слот завершения процесса: обрабатывает результат ПОПЫТКИ ПРОГРАММИРОВАНИЯ ---
+void Unit1::handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    qDebug() << "--- Попытка программирования завершена ---";
+    qDebug() << "ExitCode:" << exitCode << "ExitStatus:" << static_cast<int>(exitStatus);
+
+    QByteArray stdOutData = m_stLinkProcess->readAllStandardOutput();
+    QByteArray stdErrData = m_stLinkProcess->readAllStandardError();
+    if (!stdOutData.isEmpty()) qDebug() << "[STLink STDOUT (final)]" << QString::fromLocal8Bit(stdOutData).trimmed();
+    if (!stdErrData.isEmpty()) qDebug() << "[STLink STDERR (final)]" << QString::fromLocal8Bit(stdErrData).trimmed();
+
+    bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
+
+    if (success) {
+        qDebug() << "Успешное программирование!";
+        ui->lblConnectionStatus->setText("<font color='green'><b>✓ Прошито</b></font>");
+        ui->lblConnectionStatus->setVisible(true);
+        statusTimer->start(3000); // Показываем успех дольше
+        m_retryTimer->stop(); // Останавливаем таймер повтора
+        ui->btnConnectAndUpload->setEnabled(true); // Включаем кнопку
+        m_currentCommandArgs.clear(); // Очищаем сохраненные аргументы
+        cleanupTemporaryFile();
+    } else {
+        qDebug() << "Попытка программирования неудачна. Оставшиеся попытки:" << m_programAttemptsLeft;
+        if (m_programAttemptsLeft > 0) {
+            // Есть еще попытки
+            qDebug() << "Запуск таймера для следующей попытки через" << m_retryTimer->interval() << "мс";
+            ui->lblConnectionStatus->setText(QString("<font color='orange'><b>✗ Попытка %1</b></font>")
+                                                 .arg(m_maxProgramAttempts - m_programAttemptsLeft));
+            ui->lblConnectionStatus->setVisible(true);
+            m_retryTimer->start(); // Запускаем таймер для вызова retryProgramAttempt
+            // Кнопка остается выключенной
+        } else {
+            // Попытки закончились
+            qDebug() << "Достигнуто максимальное количество попыток. Финальная ошибка.";
+            ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка прошивки</b></font>");
+            ui->lblConnectionStatus->setVisible(true);
+            statusTimer->start(3000); // Показываем финальную ошибку дольше
+            m_retryTimer->stop();
+            ui->btnConnectAndUpload->setEnabled(true); // Включаем кнопку
+            m_currentCommandArgs.clear(); // Очищаем сохраненные аргументы
+            cleanupTemporaryFile();
+        }
+    }
+}
+
+// --- Слот ошибки QProcess ---
+void Unit1::handleStLinkError(QProcess::ProcessError error)
+{
+    qDebug() << "--- Ошибка QProcess во время программирования ---";
+    qDebug() << "Код ошибки:" << static_cast<int>(error) << "Описание:" << m_stLinkProcess->errorString();
+
+    ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка запуска CLI</b></font>");
+    ui->lblConnectionStatus->setVisible(true);
+    statusTimer->start(3000); // Скрываем ошибку через 3 сек
+
+    m_retryTimer->stop(); // Останавливаем таймер повтора
+    m_programAttemptsLeft = 0; // Сбрасываем счетчик
+    ui->btnConnectAndUpload->setEnabled(true); // Включаем кнопку
+    m_currentCommandArgs.clear(); // Очищаем сохраненные аргументы
+    cleanupTemporaryFile();
+}
+
+// --- Новый слот: выполняется по таймеру для повторной попытки ПРОГРАММИРОВАНИЯ ---
+void Unit1::retryProgramAttempt()
+{
+    qDebug() << "Сработал таймер повтора программирования.";
+    if (m_stLinkProcess->state() == QProcess::NotRunning) { // Убедимся, что предыдущий точно завершился
+        executeProgramAttempt(); // Запускаем следующую попытку
+    } else {
+        qWarning() << "Таймер сработал, но процесс ST-Link все еще активен? Странно.";
+        // Сбросить состояние и включить кнопку
+        m_programAttemptsLeft = 0;
+        ui->btnConnectAndUpload->setEnabled(true);
+        m_currentCommandArgs.clear();
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка состояния</b></font>");
+        ui->lblConnectionStatus->setVisible(true);
+        statusTimer->start(2000);
+    }
+}
+
+// --- Слоты для чтения вывода STDOUT/STDERR (без изменений, но помним про Local8Bit) ---
+void Unit1::handleStLinkStdOut()
+{
+    QByteArray data = m_stLinkProcess->readAllStandardOutput();
+    if (!data.isEmpty()) {
+        qDebug() << "[STLink STDOUT]" << QString::fromLocal8Bit(data).trimmed();
+    }
+}
+void Unit1::handleStLinkStdErr()
+{
+    QByteArray data = m_stLinkProcess->readAllStandardError();
+    if (!data.isEmpty()) {
+        qDebug() << "[STLink STDERR]" << QString::fromLocal8Bit(data).trimmed();
+    }
+}
+
+// --- Функция скрытия статуса (без изменений) ---
 void Unit1::hideConnectionStatus()
 {
     ui->lblConnectionStatus->setVisible(false);
@@ -137,7 +390,6 @@ void Unit1::loadConfig(const QString &filePath)
     ui->cmbRevision->setCurrentIndex(-1); // Сбросить выбор по умолчанию
     qInfo() << "Unit1 loaded" << revisionsMap.count() << "revisions.";
 }
-
 
 // Функция onBtnClearRevisionClicked из оригинала
 void Unit1::onBtnClearRevisionClicked()
