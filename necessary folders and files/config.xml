@@ -1,0 +1,40 @@
+<UpdateGenerator version = "v2.4">
+    <DeviceModel name = "MD01-DON">
+		<revision category = "КНЯ85-4 103 (vB)" BldrDevModel = "KR05ru.vB">
+            <BootLoader_File>BootLoader_File\KR05ru_BootLoader_vB.bin</BootLoader_File>
+            <MainProgram_File>MainProgram_File\MD01M_vB_CPU1_Bldr.bin</MainProgram_File>
+             <comands main_prog = "1" OnlyForEnteredSN = "0" OnlyForEnteredDevID = "0" NoCheckModel = "0">Команды</comands>
+            <dop SaveBthName = "1" SaveBthAddr = "0"  SaveDevDesc = "1" SaveHwVerr = "0" SaveSwVerr = "0" SaveDevSerial = "1" SaveDevModel = "1" Lvl1MemProtection = "0">Дополнительно</dop>
+            <begin_adres>0x08004000</begin_adres>
+            <SaveFirmware>Файл прошивки CPU1\КНЯ85 (103 vB)</SaveFirmware>
+            <SaveUpdate>Файл обновления CPU1 с карточки\КНЯ85 (103 vB)</SaveUpdate>
+        </revision>
+		<revision category = "КНЯ85-5 105 (vC)" BldrDevModel = "MD01M.vC">
+            <BootLoader_File>BootLoader_File\MD01M_vC_BLDR.bin</BootLoader_File>
+            <MainProgram_File>MainProgram_File\MD01M_vC_CPU1_Bldr.bin</MainProgram_File>
+             <comands main_prog = "1" OnlyForEnteredSN = "0" OnlyForEnteredDevID = "0" NoCheckModel = "0">Команды</comands>
+            <dop SaveBthName = "1" SaveBthAddr = "0"  SaveDevDesc = "1" SaveHwVerr = "0" SaveSwVerr = "0" SaveDevSerial = "1" SaveDevModel = "1" Lvl1MemProtection = "0">Дополнительно</dop>
+            <begin_adres>0x08004000</begin_adres>
+            <SaveFirmware>Файл прошивки CPU1\КНЯ85-5 (105 vC)</SaveFirmware>
+            <SaveUpdate>Файл обновления CPU1 с карточки\КНЯ85-5 (105 vC)</SaveUpdate>
+        </revision>
+		<revision category = "КНЯ85-6 106 (vD)" BldrDevModel = "MD01M.vD">
+            <BootLoader_File>BootLoader_File\MD01M_vD_BLDR.bin</BootLoader_File>
+            <MainProgram_File>MainProgram_File\MD01M_vD_CPU1_Bldr.bin</MainProgram_File>
+             <comands main_prog = "1" OnlyForEnteredSN = "0" OnlyForEnteredDevID = "0" NoCheckModel = "0">Команды</comands>
+            <dop SaveBthName = "1" SaveBthAddr = "0"  SaveDevDesc = "1" SaveHwVerr = "0" SaveSwVerr = "0" SaveDevSerial = "1" SaveDevModel = "1" Lvl1MemProtection = "0">Дополнительно</dop>
+            <begin_adres>0x08004000</begin_adres>
+            <SaveFirmware>Файл прошивки CPU1\КНЯ85-6 (106 vD)</SaveFirmware>
+            <SaveUpdate>Файл обновления CPU1 с карточки\КНЯ85-6 (106 vD)</SaveUpdate>
+        </revision>
+		<revision category = "СМ-Я1v6 (MD01V2_R4)" BldrDevModel = "MD01V2.R4">
+            <BootLoader_File>BootLoader_File\MD01V2_R4_BLDR.bin</BootLoader_File>
+            <MainProgram_File>MainProgram_File\MD01V2_R4_CPU1_Bldr.bin</MainProgram_File>
+             <comands main_prog = "1" OnlyForEnteredSN = "0" OnlyForEnteredDevID = "0" NoCheckModel = "0">Команды</comands>
+            <dop SaveBthName = "0" SaveBthAddr = "0"  SaveDevDesc = "0" SaveHwVerr = "0" SaveSwVerr = "0" SaveDevSerial = "1" SaveDevModel = "0" Lvl1MemProtection = "0">Дополнительно</dop>
+            <begin_adres>0x08004000</begin_adres>
+            <SaveFirmware>Файл прошивки CPU1\MD01V2_REV4</SaveFirmware>
+            <SaveUpdate>Файл обновления CPU1 с карточки\MD01V2_REV4</SaveUpdate>
+        </revision>
+    </DeviceModel>
+</UpdateGenerator>
