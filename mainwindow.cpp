@@ -348,18 +348,16 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->btnCreateFileManual->move(650, 620);
         ui->grpParameters->move(10, 350);
         ui->grpParameters->setFixedSize(761, 251);
-        ui->grpSerialNumbers->setFixedSize(501, 161);
-        // --- ВАЖНО: Позиция lblTotalFirmwareSize в экспертном режиме ИЗ ВАШЕГО КОДА ---
-        ui->lblTotalFirmwareSize->move(10, 200); // <--- ВАШЕ ЗНАЧЕНИЕ
+        ui->grpSerialNumbers->setFixedSize(471, 181);
+        ui->lblTotalFirmwareSize->move(10, 210);
+        ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() + 10);
+        ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() + 10);
 
         // Меню "Обновление прошивки" - позиции из вашего кода
         ui->btnUpdateShowInfo->move(10, 620);
         ui->btnUpdateCreateFileAuto->move(470, 620);
         ui->btnUpdateCreateFileManual->move(650, 620);
         ui->btnCreateCommonUpdateFile->move(210, 620);
-        // Позиции для модели устройства (можно настроить)
-        // ui->lblStaticDeviceModel->move(?, ?);
-        // ui->cmbDeviceModel->move(?, ?);
     } else {
         setFixedSize(simpleSize);  // Уменьшенный размер для простого режима
 
@@ -369,9 +367,10 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->btnCreateFileManual->move(650, 260);
         ui->grpParameters->move(10, 65);
         ui->grpParameters->setFixedSize(761, 185);
-        ui->grpSerialNumbers->setFixedSize(350, 117); // Ваша строка
-        // --- ВАЖНО: Позиция lblTotalFirmwareSize в простом режиме ИЗ ВАШЕГО КОДА ---
-        ui->lblTotalFirmwareSize->move(10, 146); // <--- ВАШЕ ЗНАЧЕНИЕ
+        ui->grpSerialNumbers->setFixedSize(350, 117);
+        ui->lblTotalFirmwareSize->move(10, 146);
+        ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() - 10);
+        ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() - 10);
 
         // Меню "Обновление прошивки" - позиции из вашего кода
         ui->btnUpdateShowInfo->move(10, 260);

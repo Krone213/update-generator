@@ -73,6 +73,11 @@ CMakeLists.txt.user*
 *.dll
 *.exe
 
+!necessary folders and files/ST-LINK/advapi32.dll
+!necessary folders and files/ST-LINK/comctl32.dll
+!necessary folders and files/ST-LINK/STLinkUSBDriver.dll
+!necessary folders and files/ST-LINK/ST-LINK_CLI.exe
+
 # Directories with generated files
 .moc/
 .obj/

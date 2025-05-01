@@ -202,7 +202,6 @@ void Unit1::executeProgramAttempt()
     m_stLinkProcess->start(m_stLinkCliPath, m_currentCommandArgs); // Используем сохраненные аргументы
 }
 
-
 // --- Слот завершения процесса: обрабатывает результат ПОПЫТКИ ПРОГРАММИРОВАНИЯ ---
 void Unit1::handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
@@ -280,7 +279,7 @@ void Unit1::retryProgramAttempt()
         m_currentCommandArgs.clear();
         ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка состояния</b></font>");
         ui->lblConnectionStatus->setVisible(true);
-        statusTimer->start(2000);
+        statusTimer->start(3000);
     }
 }
 
@@ -467,7 +466,7 @@ void Unit1::onRevisionChanged(int index)
         ui->lblProgramDataFileName->setText("Файл: -");
         ui->lblLoaderFileSize->setText("Размер: -");
         ui->lblProgramDataFileSize->setText("Размер: -");
-        ui->lblTotalFirmwareSize->setText("Размер: -");
+        ui->lblTotalFirmwareSize->setText("Суммарный размер файла прошивки: -");
         SaveFirmware.clear();
     } else if (revisionsMap.contains(selected)) {
         RevisionInfo info = revisionsMap[selected];
@@ -483,7 +482,7 @@ void Unit1::onRevisionChanged(int index)
         ui->lblProgramDataFileName->setText("Файл: ОШИБКА");
         ui->lblLoaderFileSize->setText("Размер: -");
         ui->lblProgramDataFileSize->setText("Размер: -");
-        ui->lblTotalFirmwareSize->setText("Размер: -");
+        ui->lblTotalFirmwareSize->setText("Суммарный размер файла прошивки: -");
         SaveFirmware.clear();
     }
 }
@@ -566,12 +565,12 @@ void Unit1::updateTotalFirmwareSize()
     if (totalSize > 0) {
         double totalSizeKB = static_cast<double>(totalSize) / 1024.0;
         // Используем tr для возможного перевода и форматирование как в прошлый раз
-        ui->lblTotalFirmwareSize->setText(tr("Суммарный размер: %1 КБ (%2 байт)")
+        ui->lblTotalFirmwareSize->setText(tr("Суммарный размер файла прошивки: %1 КБ (%2 байт)")
                                               .arg(QString::number(totalSizeKB, 'f', 2))
                                               .arg(totalSize));
     } else {
         // Ставим тире, если файлы не выбраны или не найдены
-        ui->lblTotalFirmwareSize->setText(tr("Размер: -"));
+        ui->lblTotalFirmwareSize->setText(tr("Суммарный размер файла прошивки: -"));
     }
 }
 
