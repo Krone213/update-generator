@@ -70,7 +70,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     // --- Подключения кнопок Unit2 (ИЗ ВАШЕГО КОДА + АВТО) ---
     connect(ui->btnChooseUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnChooseUpdateProgramDataFileClicked);
-    connect(ui->btnClearUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnClearUpdateProgramDataFileClicked);
     connect(ui->btnUpdateCreateFileManual, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateCreateFileManualClicked);
     connect(ui->btnUpdateShowInfo, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateShowInfoClicked);
     connect(ui->btnClearUpdateRevision, &QPushButton::clicked, unit2, &Unit2::onBtnClearUpdateRevisionClicked);
@@ -428,4 +427,25 @@ void MainWindow::onAutoCreateUpdateTriggered() {
     qInfo() << "Triggering auto-create update in Unit2 for file:" << outFilePathAbs;
     // Передаем ПОЛНЫЙ ПУТЬ К ФАЙЛУ в createUpdateFiles
     unit2->createUpdateFiles(outFilePathAbs);
+}
+
+QSet<QString> MainWindow::getUpdateAutoSavePaths() const
+{
+    QSet<QString> updatePaths;
+    // Итерируем по всем значениям (ExtendedRevisionInfo) в карте
+    QMapIterator<QString, ExtendedRevisionInfo> i(revisionsMap);
+    while (i.hasNext()) {
+        i.next();
+        const ExtendedRevisionInfo& info = i.value();
+        // Добавляем непустой путь в set (дубликаты автоматически игнорируются)
+        if (!info.saveUpdatePath.isEmpty()) {
+            updatePaths.insert(info.saveUpdatePath);
+        }
+    }
+    qDebug() << "MainWindow::getUpdateAutoSavePaths - Collected" << updatePaths.count() << "unique paths on request.";
+    return updatePaths;
+}
+
+const QMap<QString, ExtendedRevisionInfo>& MainWindow::getRevisionsMap() const {
+    return revisionsMap;
 }

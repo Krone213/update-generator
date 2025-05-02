@@ -34,6 +34,10 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    QSet<QString> getUpdateAutoSavePaths() const; // <--- ДОБАВИТЬ ЭТОТ МЕТОД
+    const QMap<QString, ExtendedRevisionInfo>& getRevisionsMap() const; // <-- Должен быть
+
+
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -48,6 +52,7 @@ private slots:
 
     // --- Слот для кнопки Unit2, требующей центральных данных ---
     void onAutoCreateUpdateTriggered(); // Для кнопки "Авто" в Unit2
+
 
 private:
     Ui::MainWindow *ui;

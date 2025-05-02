@@ -35,7 +35,6 @@ private:
 public slots:
     // --- Slots Connected Directly from MainWindow UI ---
     void onBtnChooseUpdateProgramDataFileClicked();
-    void onBtnClearUpdateProgramDataFileClicked();
     void onBtnUpdateCreateFileManualClicked(); // Manual create uses this directly
     void onBtnUpdateShowInfoClicked();
     void onBtnClearUpdateRevisionClicked(); // Clears Unit2 UI or specific files?
