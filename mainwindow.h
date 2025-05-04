@@ -17,15 +17,19 @@
 #include <QDir>
 #include <QFileDialog>
 
+#include "unit1.h"
+#include "unit2.h"
+
 #include "config_data.h" // Используем расширенную структуру
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class Unit1; // Forward declaration
-class Unit2; // Forward declaration
-class QComboBox; // Forward declaration
+class Unit1;
+class Unit2;
+class QComboBox;
+class QTextEdit;
 
 class MainWindow : public QMainWindow
 {
@@ -34,10 +38,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    QSet<QString> getUpdateAutoSavePaths() const; // <--- ДОБАВИТЬ ЭТОТ МЕТОД
-    const QMap<QString, ExtendedRevisionInfo>& getRevisionsMap() const; // <-- Должен быть
-
-
+    QSet<QString> getUpdateAutoSavePaths() const;
+    const QMap<QString, ExtendedRevisionInfo>& getRevisionsMap() const;
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -45,13 +47,15 @@ protected:
 private slots:
     void onExpertModeToggled(bool checked);
 
-    // --- Слоты для обработки изменений в комбобоксах (теперь вызывают единый обработчик) ---
+    // --- Слоты для обработки изменений в комбобоксах ---
     void handleRevisionComboBoxChanged(int index);
     void handleUpdateRevisionComboBoxChanged(int index);
-    void handleDeviceModelComboBoxChanged(int index); // <-- НОВЫЙ СЛОТ
+    void handleDeviceModelComboBoxChanged(int index);
 
     // --- Слот для кнопки Unit2, требующей центральных данных ---
-    void onAutoCreateUpdateTriggered(); // Для кнопки "Авто" в Unit2
+    void onAutoCreateUpdateTriggered();
+
+    void appendToLog(const QString &message, bool isError);
 
 
 private:
@@ -62,13 +66,13 @@ private:
     Unit1 *unit1;
     Unit2 *unit2;
 
-    QMap<QString, ExtendedRevisionInfo> revisionsMap; // Карта с расширенными данными
+    QMap<QString, ExtendedRevisionInfo> revisionsMap;
 
     // --- Приватные методы ---
-    void loadConfigAndPopulate(const QString &filePath); // Загружает конфиг и заполняет ВСЕ комбобоксы
-    void updateUnit2UI(const QString& category);         // Обновляет ТОЛЬКО UI для Unit2
-    void synchronizeComboBoxes(QObject* senderComboBox); // <-- НОВЫЙ МЕТОД СИНХРОНИЗАЦИИ
-    QString findCategoryForModel(const QString& modelName); // <-- Вспомогательный метод
+    void loadConfigAndPopulate(const QString &filePath);
+    void updateUnit2UI(const QString& category);
+    void synchronizeComboBoxes(QObject* senderComboBox);
+    QString findCategoryForModel(const QString& modelName);
 };
 
 #endif // MAINWINDOW_H

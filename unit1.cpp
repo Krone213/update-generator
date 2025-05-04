@@ -1,19 +1,5 @@
 #include "unit1.h"
-#include <QFile>
-#include <QFileInfo>
-#include <QDir>
-#include <QMessageBox>
-#include <QFileDialog> // Убедитесь, что включен
-#include "crcunit.h"   // Убедитесь, что включен и содержит calcCrc32/calcCrc32_intermediate
-#include <QDebug>      // Для qDebug/qWarning
-#include <QtEndian>    // Для qToLittleEndian и работы с байтами
-#include <cstring>
-#include <QRegularExpression>
-#include <QCoreApplication>
-#include <QDir>
-#include <QDateTime>
-#include <QMessageBox>
-
+#include "crcunit.h"
 
 Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     : QObject(parent), ui(ui),
@@ -31,20 +17,17 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     connect(m_stLinkProcess, &QProcess::readyReadStandardError, this, &Unit1::handleStLinkStdErr);
 
     m_retryTimer = new QTimer(this);
-    m_retryTimer->setInterval(2000); // Задержка 2 секунды
-    m_retryTimer->setSingleShot(true); // Сработает один раз
-    connect(m_retryTimer, &QTimer::timeout, this, &Unit1::retryProgramAttempt); // Соединяем таймер со слотом повтор
+    m_retryTimer->setInterval(2000);
+    m_retryTimer->setSingleShot(true);
+    connect(m_retryTimer, &QTimer::timeout, this, &Unit1::retryProgramAttempt);
 
-    // Скрываем метку по умолчанию
     ui->lblConnectionStatus->setVisible(false);
-    loadConfig("config.xml"); // Unit1 сам грузит конфиг
-    // Unit1 сам подключается к своему комбобоксу
+    loadConfig("config.xml");
     connect(ui->cmbRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &Unit1::onRevisionChanged);
 
-    // Инициализация UI после загрузки конфига
-    ui->cmbRevision->setCurrentIndex(-1); // Начать без выбора
-    onRevisionChanged(-1); // Обновить UI для состояния "нет выбора"
+    ui->cmbRevision->setCurrentIndex(-1);
+    onRevisionChanged(-1);
 }
 
 Unit1::~Unit1()
@@ -55,18 +38,18 @@ Unit1::~Unit1()
 }
 
 void Unit1::cleanupTemporaryFile() {
-    if (!m_firmwareFilePath.isEmpty() && m_firmwareFilePath.contains("temp_firmware")) { // Проверяем, что это наш временный файл
+    if (!m_firmwareFilePath.isEmpty() && m_firmwareFilePath.contains("temp_firmware")) {
         qDebug() << "Удаление временного файла:" << m_firmwareFilePath;
         QFile tempFile(m_firmwareFilePath);
         if (!tempFile.remove()) {
             qWarning() << "Не удалось удалить временный файл:" << m_firmwareFilePath << tempFile.errorString();
         }
-        // Пробуем удалить и папку, если она пуста (не критично, если не получится)
+
         QFileInfo tempFileInfo(m_firmwareFilePath);
         QDir tempDir = tempFileInfo.dir();
-        tempDir.rmdir(tempDir.path()); // rmdir удалит, только если папка пуста
+        tempDir.rmdir(tempDir.path());
 
-        m_firmwareFilePath.clear(); // Очищаем путь в любом случае
+        m_firmwareFilePath.clear();
     }
     m_currentCommandArgs.clear();
 }
@@ -78,16 +61,15 @@ void Unit1::onBtnConnectAndUploadClicked()
         return;
     }
     if (!QFile::exists(m_stLinkCliPath)) {
-        qDebug() << "ST-LINK_CLI.exe не найден.";
+        emit logToInterface("ST-LINK_CLI.exe не найден.", true);
         ui->lblConnectionStatus->setText("<font color='red'><b>✗ (Нет CLI)</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(2000);
         return;
     }
 
-    // --- Выбор файла прошивки ---
     QString originalFirmwarePath;
-    QString defaultDir = QDir::currentPath() + "/Файл Прошивки CPU1/"; // Можно оставить как есть или улучшить
+    QString defaultDir = QDir::currentPath() + "/Файл Прошивки CPU1/";
     QDir testDir(defaultDir);
     if (!testDir.exists()) {
         defaultDir = QDir::currentPath();
@@ -100,51 +82,44 @@ void Unit1::onBtnConnectAndUploadClicked()
         );
 
     if (originalFirmwarePath.isEmpty()) {
-        qDebug() << "Выбор файла отменен.";
+        emit logToInterface("Выбор файла отменен.", false);
         return;
     }
-    qDebug() << "Выбран оригинальный файл прошивки:" << originalFirmwarePath;
+    emit logToInterface("Выбран файл: " + originalFirmwarePath, false);
 
-    // --- Подготовка временного пути ---
     QString appDir = QCoreApplication::applicationDirPath();
     QString tempSubDir = "temp_firmware";
     QDir tempDir(appDir);
 
-    // Создаем подпапку, если ее нет
     if (!tempDir.exists(tempSubDir)) {
         if (!tempDir.mkdir(tempSubDir)) {
-            qCritical() << "Не удалось создать временную папку:" << tempDir.filePath(tempSubDir);
+            emit logToInterface("Критическая ошибка: Не удалось создать временную папку: " + tempDir.filePath(tempSubDir), true);
             QMessageBox::critical(nullptr, "Ошибка", "Не удалось создать временную папку для прошивки.");
             return;
         }
-        qDebug() << "Создана временная папка:" << tempDir.filePath(tempSubDir);
+        emit logToInterface("Создана временная папка: " + tempDir.filePath(tempSubDir), false);
     } else {
         qDebug() << "Временная папка уже существует:" << tempDir.filePath(tempSubDir);
     }
 
-    // Генерируем простое имя файла
     QFileInfo originalFileInfo(originalFirmwarePath);
-    QString suffix = originalFileInfo.suffix().isEmpty() ? "tmp" : originalFileInfo.suffix(); // Расширение
+    QString suffix = originalFileInfo.suffix().isEmpty() ? "tmp" : originalFileInfo.suffix();
     QString simpleFileName = QString("upload_%1.%2")
                                  .arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz"))
                                  .arg(suffix);
-    QString temporaryFirmwarePath = tempDir.filePath(tempSubDir + "/" + simpleFileName); // Полный путь к временному файлу
+    QString temporaryFirmwarePath = tempDir.filePath(tempSubDir + "/" + simpleFileName);
 
     qDebug() << "Целевой временный путь:" << temporaryFirmwarePath;
 
-    // --- Копирование ---
-    // Удаляем старый временный файл с таким же именем, если вдруг остался
     QFile::remove(temporaryFirmwarePath);
 
     qDebug() << "Попытка копирования из" << originalFirmwarePath << "в" << temporaryFirmwarePath;
     if (!QFile::copy(originalFirmwarePath, temporaryFirmwarePath)) {
         QFile checkSource(originalFirmwarePath);
-        QString errorDetails = checkSource.errorString(); // Попробуем получить ошибку от QFile
-        qCritical() << "Не удалось скопировать файл прошивки во временную папку."
-                    << "Источник:" << originalFirmwarePath << "Назначение:" << temporaryFirmwarePath
-                    << "Ошибка QFile:" << errorDetails;
+        QString errorDetails = checkSource.errorString();
+        emit logToInterface("Критическая ошибка: Не удалось скопировать файл прошивки из " + originalFirmwarePath + " в " +
+                                temporaryFirmwarePath + ". Ошибка: " + errorDetails, true);
 
-        // Сообщаем пользователю о проблеме и предлагаем решение
         QMessageBox::warning(nullptr, "Ошибка копирования",
                              QString("Не удалось скопировать файл прошивки:\n%1\n\n"
                                      "Возможные причины:\n"
@@ -153,27 +128,23 @@ void Unit1::onBtnConnectAndUploadClicked()
                                      "- Файл используется другим процессом.\n\n"
                                      "Рекомендация:\n"
                                      "Попробуйте поместить файл прошивки в папку с простым путем (например, C:\\FW\\) и повторите попытку.")
-                                 .arg(originalFileInfo.fileName()) // Показываем только имя файла в сообщении
+                                 .arg(originalFileInfo.fileName())
                              );
 
-        // Очистка, если временный файл создался, но копирование не удалось
         QFile::remove(temporaryFirmwarePath);
-        return; // Прерываем операцию
+        return;
     }
 
-    qDebug() << "Файл успешно скопирован во временный:" << temporaryFirmwarePath;
-
-    // --- Используем временный путь для команды ---
+    emit logToInterface("Файл скопирован во временный: " + temporaryFirmwarePath, false);
     m_firmwareFilePath = temporaryFirmwarePath; // Сохраняем временный путь для ST-Link и очистки
 
-    // --- Формирование АРГУМЕНТОВ (используя m_firmwareFilePath) ---
+    // Аргументы ST-LINK_CLI
     m_currentCommandArgs.clear();
     m_currentCommandArgs << "-c" << "SWD" << "Freq=4000" << "UR";
     m_currentCommandArgs << "-P" << m_firmwareFilePath << "0x08000000"; // Адрес !!!
     m_currentCommandArgs << "-V" << "-Rst";
 
-    // --- Начало процесса программирования ---
-    qDebug() << "--- Начало серии попыток программирования (с файлом в подпапке приложения) ---";
+    emit logToInterface("--- Начало программирования (файл: " + QFileInfo(m_firmwareFilePath).fileName() + ") ---", false);
     ui->btnConnectAndUpload->setEnabled(false);
     ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка...</b></font>");
     ui->lblConnectionStatus->setVisible(true);
@@ -187,22 +158,20 @@ void Unit1::executeProgramAttempt()
 {
     if (m_programAttemptsLeft <= 0) {
         qDebug() << "Нет оставшихся попыток программирования.";
-        // Это не должно происходить при правильной логике, но на всякий случай
         ui->btnConnectAndUpload->setEnabled(true);
         return;
     }
 
     qDebug() << "Попытка программирования (" << (m_maxProgramAttempts - m_programAttemptsLeft + 1) << "/" << m_maxProgramAttempts << ")...";
-    m_programAttemptsLeft--; // Уменьшаем счетчик ПЕРЕД попыткой
+    m_programAttemptsLeft--;
 
-    m_stLinkProcess->readAllStandardOutput(); // Очистка буферов
+    m_stLinkProcess->readAllStandardOutput();
     m_stLinkProcess->readAllStandardError();
 
-    qDebug() << "Запуск ST-LINK CLI:" << m_stLinkCliPath << m_currentCommandArgs.join(" ");
-    m_stLinkProcess->start(m_stLinkCliPath, m_currentCommandArgs); // Используем сохраненные аргументы
+    emit logToInterface("Запуск: " + m_stLinkCliPath + " " + m_currentCommandArgs.join(" "), false);
+    m_stLinkProcess->start(m_stLinkCliPath, m_currentCommandArgs);
 }
 
-// --- Слот завершения процесса: обрабатывает результат ПОПЫТКИ ПРОГРАММИРОВАНИЯ ---
 void Unit1::handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     qDebug() << "--- Попытка программирования завершена ---";
@@ -216,64 +185,58 @@ void Unit1::handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus)
     bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
 
     if (success) {
-        qDebug() << "Успешное программирование!";
+        emit logToInterface("Успешное программирование!", false);
         ui->lblConnectionStatus->setText("<font color='green'><b>✓ Прошито</b></font>");
         ui->lblConnectionStatus->setVisible(true);
-        statusTimer->start(3000); // Показываем успех дольше
-        m_retryTimer->stop(); // Останавливаем таймер повтора
-        ui->btnConnectAndUpload->setEnabled(true); // Включаем кнопку
-        m_currentCommandArgs.clear(); // Очищаем сохраненные аргументы
+        statusTimer->start(3000);
+        m_retryTimer->stop();
+        ui->btnConnectAndUpload->setEnabled(true);
+        m_currentCommandArgs.clear();
         cleanupTemporaryFile();
     } else {
-        qDebug() << "Попытка программирования неудачна. Оставшиеся попытки:" << m_programAttemptsLeft;
+        emit logToInterface(QString("Попытка %1/%2 неудачна.").arg(m_maxProgramAttempts -
+                                                                   m_programAttemptsLeft).arg(m_maxProgramAttempts), true);
         if (m_programAttemptsLeft > 0) {
-            // Есть еще попытки
             qDebug() << "Запуск таймера для следующей попытки через" << m_retryTimer->interval() << "мс";
             ui->lblConnectionStatus->setText(QString("<font color='orange'><b>✗ Попытка %1</b></font>")
                                                  .arg(m_maxProgramAttempts - m_programAttemptsLeft));
             ui->lblConnectionStatus->setVisible(true);
-            m_retryTimer->start(); // Запускаем таймер для вызова retryProgramAttempt
-            // Кнопка остается выключенной
+            m_retryTimer->start();
         } else {
-            // Попытки закончились
-            qDebug() << "Достигнуто максимальное количество попыток. Финальная ошибка.";
+            emit logToInterface("Достигнуто максимальное количество попыток. Ошибка прошивки.", true);
             ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка прошивки</b></font>");
             ui->lblConnectionStatus->setVisible(true);
-            statusTimer->start(3000); // Показываем финальную ошибку дольше
+            statusTimer->start(3000);
             m_retryTimer->stop();
-            ui->btnConnectAndUpload->setEnabled(true); // Включаем кнопку
-            m_currentCommandArgs.clear(); // Очищаем сохраненные аргументы
+            ui->btnConnectAndUpload->setEnabled(true);
+            m_currentCommandArgs.clear();
             cleanupTemporaryFile();
         }
     }
 }
 
-// --- Слот ошибки QProcess ---
 void Unit1::handleStLinkError(QProcess::ProcessError error)
 {
-    qDebug() << "--- Ошибка QProcess во время программирования ---";
+    emit logToInterface("Ошибка QProcess: " + m_stLinkProcess->errorString(), true);
     qDebug() << "Код ошибки:" << static_cast<int>(error) << "Описание:" << m_stLinkProcess->errorString();
 
     ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка запуска CLI</b></font>");
     ui->lblConnectionStatus->setVisible(true);
-    statusTimer->start(3000); // Скрываем ошибку через 3 сек
+    statusTimer->start(3000);
 
-    m_retryTimer->stop(); // Останавливаем таймер повтора
-    m_programAttemptsLeft = 0; // Сбрасываем счетчик
-    ui->btnConnectAndUpload->setEnabled(true); // Включаем кнопку
-    m_currentCommandArgs.clear(); // Очищаем сохраненные аргументы
+    m_retryTimer->stop();
+    m_programAttemptsLeft = 0;
+    ui->btnConnectAndUpload->setEnabled(true);
+    m_currentCommandArgs.clear();
     cleanupTemporaryFile();
 }
 
-// --- Новый слот: выполняется по таймеру для повторной попытки ПРОГРАММИРОВАНИЯ ---
 void Unit1::retryProgramAttempt()
 {
-    qDebug() << "Сработал таймер повтора программирования.";
-    if (m_stLinkProcess->state() == QProcess::NotRunning) { // Убедимся, что предыдущий точно завершился
-        executeProgramAttempt(); // Запускаем следующую попытку
+    if (m_stLinkProcess->state() == QProcess::NotRunning) {
+        executeProgramAttempt();
     } else {
         qWarning() << "Таймер сработал, но процесс ST-Link все еще активен? Странно.";
-        // Сбросить состояние и включить кнопку
         m_programAttemptsLeft = 0;
         ui->btnConnectAndUpload->setEnabled(true);
         m_currentCommandArgs.clear();
@@ -283,29 +246,30 @@ void Unit1::retryProgramAttempt()
     }
 }
 
-// --- Слоты для чтения вывода STDOUT/STDERR (без изменений, но помним про Local8Bit) ---
 void Unit1::handleStLinkStdOut()
 {
     QByteArray data = m_stLinkProcess->readAllStandardOutput();
+    QString message = QString::fromLocal8Bit(data).trimmed();
     if (!data.isEmpty()) {
         qDebug() << "[STLink STDOUT]" << QString::fromLocal8Bit(data).trimmed();
+        emit logToInterface(message, false);
     }
 }
 void Unit1::handleStLinkStdErr()
 {
     QByteArray data = m_stLinkProcess->readAllStandardError();
     if (!data.isEmpty()) {
+        QString message = QString::fromLocal8Bit(data).trimmed();
         qDebug() << "[STLink STDERR]" << QString::fromLocal8Bit(data).trimmed();
+        emit logToInterface(message, true);
     }
 }
 
-// --- Функция скрытия статуса (без изменений) ---
 void Unit1::hideConnectionStatus()
 {
     ui->lblConnectionStatus->setVisible(false);
 }
 
-// Функция-слот для кнопки "Инфо" из оригинала
 void Unit1::onBtnShowInfoClicked()
 {
     QString title = tr("Инфо");
@@ -313,13 +277,12 @@ void Unit1::onBtnShowInfoClicked()
     QMessageBox::information(ui->btnShowInfo->window(), title, message);
 }
 
-// Функция загрузки конфига из оригинала
 void Unit1::loadConfig(const QString &filePath)
 {
     ui->cmbRevision->blockSignals(true);
     ui->cmbRevision->clear();
     revisionsMap.clear();
-    autoSavePaths.clear(); // Очищаем сет путей при загрузке
+    autoSavePaths.clear();
     SaveFirmware.clear();
     ui->cmbRevision->blockSignals(false);
 
@@ -343,7 +306,7 @@ void Unit1::loadConfig(const QString &filePath)
     file.close();
 
     QDomElement root = doc.documentElement();
-    QStringList categories; // Собираем категории для добавления
+    QStringList categories;
 
     QDomNodeList deviceModels = root.elementsByTagName("DeviceModel");
     for (int i = 0; i < deviceModels.count(); ++i) {
@@ -361,7 +324,6 @@ void Unit1::loadConfig(const QString &filePath)
             if (!savePathFragment.isEmpty()) {
                 autoSavePaths.insert(savePathFragment); // Добавляем уникальный путь в сет
             }
-            // -------------------------------------
 
             if (!category.isEmpty() && !bootloader.isEmpty() && !mainProgram.isEmpty()) {
                 // Используем оригинальную структуру RevisionInfo
@@ -374,23 +336,19 @@ void Unit1::loadConfig(const QString &filePath)
         }
     }
 
-    // Добавляем найденные категории в комбобокс
     ui->cmbRevision->blockSignals(true);
-    // categories.sort(); // Опционально сортируем
     ui->cmbRevision->addItems(categories);
 
-    // Добавляем "OthDev"
     if (!revisionsMap.contains("OthDev")) {
         ui->cmbRevision->addItem("OthDev");
-        revisionsMap["OthDev"] = RevisionInfo{ "", "", "" }; // Пустая информация для OthDev
+        revisionsMap["OthDev"] = RevisionInfo{ "", "", "" };
     }
-    ui->cmbRevision->blockSignals(false);
 
-    ui->cmbRevision->setCurrentIndex(-1); // Сбросить выбор по умолчанию
+    ui->cmbRevision->blockSignals(false);
+    ui->cmbRevision->setCurrentIndex(-1);
     qInfo() << "Unit1 loaded" << revisionsMap.count() << "revisions.";
 }
 
-// Функция onBtnClearRevisionClicked из оригинала
 void Unit1::onBtnClearRevisionClicked()
 {
     if (autoSavePaths.isEmpty()) {
@@ -400,11 +358,14 @@ void Unit1::onBtnClearRevisionClicked()
     }
     QStringList pathsToDeleteDisplay;
     QString currentDir = QDir::currentPath();
-    for (const QString &pathFragment : qAsConst(autoSavePaths)) {
+    for (const QString &pathFragment : std::as_const(autoSavePaths)) {
         pathsToDeleteDisplay << QDir::toNativeSeparators(pathFragment);
     }
-    QString confirmationMessage = tr("Будут рекурсивно удалены все файлы и подпапки в следующих директориях (относительно папки программы):\n\n%1\n\nВы уверены, что хотите продолжить?")
+
+    QString confirmationMessage = tr("Будут рекурсивно удалены все файлы и подпапки в следующих директориях (относительно папки программы):"
+                                     "\n\n%1\n\nВы уверены, что хотите продолжить?")
                                       .arg(pathsToDeleteDisplay.join("\n"));
+
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(ui->btnClearRevision->window(), tr("Подтверждение очистки"),
                                   confirmationMessage, QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
@@ -412,46 +373,50 @@ void Unit1::onBtnClearRevisionClicked()
     if (reply != QMessageBox::Yes) { qInfo() << "Очистка отменена пользователем."; return; }
 
     qInfo() << "Начало очистки автоматически сохраненных файлов...";
+
     int successCount = 0; int failCount = 0; QStringList errorDetails;
-    for (const QString &pathFragment : qAsConst(autoSavePaths)) {
+    for (const QString &pathFragment : std::as_const(autoSavePaths)) {
         QString fullPathBase = QDir(currentDir).filePath(pathFragment);
         QDir baseDir(fullPathBase);
         if (baseDir.exists()) {
             qInfo() << "Удаление базовой папки:" << QDir::toNativeSeparators(fullPathBase);
             if (baseDir.removeRecursively()) { qInfo() << "Успешно."; successCount++; }
-            else { qWarning() << "Не удалось удалить:" << QDir::toNativeSeparators(fullPathBase); failCount++; errorDetails << QDir::toNativeSeparators(pathFragment) + " (базовая)"; }
+            else { qWarning() << "Не удалось удалить:" << QDir::toNativeSeparators(fullPathBase); failCount++; errorDetails <<
+                    QDir::toNativeSeparators(pathFragment) + " (базовая)"; }
         } else { qInfo() << "Базовая папка не найдена, пропуск:" << QDir::toNativeSeparators(fullPathBase); }
     }
+
     QString resultMessage;
-    if (failCount == 0 && successCount > 0) { resultMessage = tr("Автоматически сохраненные файлы и папки (%1) успешно удалены.").arg(successCount); QMessageBox::information(ui->btnClearRevision->window(), tr("Очистка завершена"), resultMessage); }
-    else if (failCount > 0) { resultMessage = tr("Не удалось удалить %1 папок:\n%2").arg(failCount).arg(errorDetails.join("\n")); if (successCount > 0) resultMessage += tr("\n\nУспешно удалено: %1 папок.").arg(successCount); QMessageBox::warning(ui->btnClearRevision->window(), tr("Ошибка очистки"), resultMessage); }
+    if (failCount == 0 && successCount > 0) { resultMessage = tr("Автоматически сохраненные файлы и папки (%1) успешно удалены.").arg(successCount);
+        QMessageBox::information(ui->btnClearRevision->window(), tr("Очистка завершена"), resultMessage); }
+    else if (failCount > 0) { resultMessage = tr("Не удалось удалить %1 папок:\n%2").arg(failCount).arg(errorDetails.join("\n"));
+        if (successCount > 0) resultMessage += tr("\n\nУспешно удалено: %1 папок.").arg(successCount);
+        QMessageBox::warning(ui->btnClearRevision->window(), tr("Ошибка очистки"), resultMessage); }
     else { resultMessage = tr("Не найдено папок для удаления."); QMessageBox::information(ui->btnClearRevision->window(), tr("Очистка"), resultMessage); }
     qInfo() << "Очистка завершена.";
 }
+
 void Unit1::updateProgramDataFileSize(const QString &filePath)
 {
     if (filePath.isEmpty() || filePath.startsWith("Файл:") || filePath == "-") {
         ui->lblProgramDataFileSize->setText("Размер: -"); return;
     }
-    // Проверяем абсолютный путь
+
     QString absPath = QDir::isRelativePath(filePath) ? QDir(QDir::currentPath()).filePath(filePath) : filePath;
     QFileInfo fileInfo(absPath);
+
     if (fileInfo.exists() && fileInfo.isFile()) {
         qint64 size = fileInfo.size();
-        // Обновляем правильную метку
         ui->lblProgramDataFileSize->setText("Размер: " + QString::number(size) + tr(" байт"));
     } else {
-        // Обновляем правильную метку
         ui->lblProgramDataFileSize->setText(tr("Файл не найден"));
     }
 }
-// Функция onRevisionChanged из оригинала
-// Функция onRevisionChanged из оригинала (ИСПРАВЛЕНО: добавлено объявление selected)
+
 void Unit1::onRevisionChanged(int index)
 {
-    QString selected; // <--- ОБЪЯВЛЕНИЕ ПЕРЕМЕННОЙ
+    QString selected;
 
-    // Проверка индекса
     if (index < 0 || index >= ui->cmbRevision->count()) {
         selected = "OthDev"; // Считаем, что выбор сброшен или индекс невалиден
     } else {
@@ -459,9 +424,7 @@ void Unit1::onRevisionChanged(int index)
     }
     qDebug() << "Unit1::onRevisionChanged - selected:" << selected;
 
-    // Дальнейшая логика использует объявленную переменную 'selected'
     if (selected == "OthDev") {
-        // Очистка полей для ручного выбора
         ui->lblLoaderFileName->setText("Файл: -");
         ui->lblProgramDataFileName->setText("Файл: -");
         ui->lblLoaderFileSize->setText("Размер: -");
@@ -487,15 +450,15 @@ void Unit1::onRevisionChanged(int index)
     }
 }
 
-// Функция updateLoaderFileSize из оригинала
 void Unit1::updateLoaderFileSize(const QString &filePath)
 {
     if (filePath.isEmpty() || filePath.startsWith("Файл:") || filePath == "-") {
         ui->lblLoaderFileSize->setText("Размер: -"); return;
     }
-    // Проверяем абсолютный путь
+
     QString absPath = QDir::isRelativePath(filePath) ? QDir(QDir::currentPath()).filePath(filePath) : filePath;
     QFileInfo fileInfo(absPath);
+
     if (fileInfo.exists() && fileInfo.isFile()) {
         qint64 size = fileInfo.size();
         ui->lblLoaderFileSize->setText("Размер: " +QString::number(size) + tr(" байт"));
@@ -504,27 +467,23 @@ void Unit1::updateLoaderFileSize(const QString &filePath)
     }
 }
 
-// Функция updateTotalFirmwareSize из оригинала - ИЗМЕНЕНА
 void Unit1::updateTotalFirmwareSize()
 {
     qint64 totalSize = 0;
     QString currentDir = QDir::currentPath();
-    QString selectedCategory = ui->cmbRevision->currentText(); // Получаем текущую категорию
+    QString selectedCategory = ui->cmbRevision->currentText();
 
     QString loaderFilePath = "";
     QString programDataFilePath = "";
 
-    // Получаем пути к файлам из сохраненных данных, а не из UI меток
     if (!selectedCategory.isEmpty() && selectedCategory != "OthDev" && revisionsMap.contains(selectedCategory))
     {
         const RevisionInfo& info = revisionsMap.value(selectedCategory);
-        loaderFilePath = info.bootloaderFile;      // Путь к загрузчику из карты
-        programDataFilePath = info.mainProgramFile; // Путь к программе из карты
+        loaderFilePath = info.bootloaderFile;
+        programDataFilePath = info.mainProgramFile;
     }
     else if (selectedCategory == "OthDev" || selectedCategory.isEmpty())
     {
-        // Если выбрано OthDev или ничего не выбрано, или выбраны файлы вручную (в экспертном режиме)
-        // Пытаемся получить пути из меток (для совместимости с ручным выбором в экспертном режиме)
         QString loaderFilePathRel = ui->lblLoaderFileName->text();
         if (!loaderFilePathRel.startsWith("Файл:") && !loaderFilePathRel.isEmpty() && loaderFilePathRel != "-") {
             loaderFilePath = loaderFilePathRel; // Используем путь из метки
@@ -536,10 +495,7 @@ void Unit1::updateTotalFirmwareSize()
         }
     }
 
-
-    // Расчет размера на основе полученных путей (loaderFilePath и programDataFilePath)
     if (!loaderFilePath.isEmpty()) {
-        // Преобразуем в абсолютный путь, если он относительный
         QString absPath = QDir::isRelativePath(loaderFilePath) ? QDir(currentDir).filePath(loaderFilePath) : loaderFilePath;
         QFileInfo loaderFileInfo(absPath);
         if (loaderFileInfo.exists() && loaderFileInfo.isFile()) {
@@ -551,7 +507,6 @@ void Unit1::updateTotalFirmwareSize()
     }
 
     if (!programDataFilePath.isEmpty()) {
-        // Преобразуем в абсолютный путь, если он относительный
         QString absPath = QDir::isRelativePath(programDataFilePath) ? QDir(currentDir).filePath(programDataFilePath) : programDataFilePath;
         QFileInfo programDataFileInfo(absPath);
         if (programDataFileInfo.exists() && programDataFileInfo.isFile()) {
@@ -561,32 +516,27 @@ void Unit1::updateTotalFirmwareSize()
         }
     }
 
-    // Обновление метки общего размера
     if (totalSize > 0) {
         double totalSizeKB = static_cast<double>(totalSize) / 1024.0;
-        // Используем tr для возможного перевода и форматирование как в прошлый раз
         ui->lblTotalFirmwareSize->setText(tr("Суммарный размер файла прошивки: %1 КБ (%2 байт)")
                                               .arg(QString::number(totalSizeKB, 'f', 2))
                                               .arg(totalSize));
     } else {
-        // Ставим тире, если файлы не выбраны или не найдены
         ui->lblTotalFirmwareSize->setText(tr("Суммарный размер файла прошивки: -"));
     }
 }
 
-// Функция onBtnChooseProgramDataFileClicked из оригинала
 void Unit1::onBtnChooseProgramDataFileClicked()
 {
     QString initialDir = QDir::currentPath();
-    // Логика определения начальной папки как в оригинале
     QString currentFilePath = ui->lblProgramDataFileName->text();
+
     if (!currentFilePath.startsWith("Файл:") && !currentFilePath.isEmpty() && QFileInfo(currentFilePath).exists()) {
         initialDir = QFileInfo(currentFilePath).absolutePath();
     } else {
         initialDir = QDir(initialDir).filePath("MainProgram_File");
-        QDir().mkpath(initialDir); // Создать, если нет
+        QDir().mkpath(initialDir);
     }
-
 
     QString filePath = QFileDialog::getOpenFileName(
         ui->cmbRevision->window(),
@@ -595,40 +545,28 @@ void Unit1::onBtnChooseProgramDataFileClicked()
         tr("Файлы прошивки (*.bin *.hex);;Все файлы (*)")
         );
 
-    if (filePath.isEmpty()) return; // Отмена
-
-    QFileInfo fileInfo(filePath); // Информация о выбранном файле
-    // Проверки из оригинала
+    if (filePath.isEmpty()) return;
+    QFileInfo fileInfo(filePath);
     if (!fileInfo.exists() || !fileInfo.isFile()) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл не найден или недоступен.")); return; }
     qint64 size = fileInfo.size();
     if (size > ((1024 - 16) * 1024)) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл больше максимально допустимого размера (1008 Кб)")); return; }
 
-    // Чтение файла (если было в оригинале, иначе можно убрать)
-    /* QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Ошибка при открытии файла")); return; }
-    QByteArray data = file.readAll(); file.close();
-    if (data.size() != size) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Ошибка при чтении данных файла")); return; }
-    */
-
-    // Обновление UI
     ui->lblProgramDataFileName->setText( QDir::toNativeSeparators(filePath) );
-    // Обновляем размер через нашу функцию
+
     updateProgramDataFileSize(filePath);
-    // Обновляем общий размер
     updateTotalFirmwareSize();
 }
 
-// Функция onBtnChooseLoaderFileClicked из оригинала
 void Unit1::onBtnChooseLoaderFileClicked()
 {
     QString initialDir = QDir::currentPath();
-    // Логика определения начальной папки как в оригинале
     QString currentFilePath = ui->lblLoaderFileName->text();
-    if (!currentFilePath.startsWith("Файл:") && !currentFilePath.isEmpty() && QFileInfo(currentFilePath).exists()) {
+
+    if (!currentFilePath.startsWith("Файл:") && !currentFilePath.isEmpty() && QFileInfo::exists(currentFilePath)) {
         initialDir = QFileInfo(currentFilePath).absolutePath();
     } else {
         initialDir = QDir(initialDir).filePath("BootLoader_File");
-        QDir().mkpath(initialDir); // Создать, если нет
+        QDir().mkpath(initialDir);
     }
 
     QString filePath = QFileDialog::getOpenFileName(
@@ -638,31 +576,19 @@ void Unit1::onBtnChooseLoaderFileClicked()
         tr("Файлы загрузчика (*.bin *.hex);;Все файлы (*)")
         );
 
-    if (filePath.isEmpty()) return; // Отмена
+    if (filePath.isEmpty()) return;
 
-    QFileInfo fileInfo(filePath); // Информация о выбранном файле
-        // Проверки из оригинала
+    QFileInfo fileInfo(filePath);
     if (!fileInfo.exists() || !fileInfo.isFile()) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл не найден или недоступен.")); return; }
     qint64 size = fileInfo.size();
     if (size > (16 * 1024)) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл больше максимально допустимого размера (16 Кб)")); return; }
 
-    // Чтение файла (если было в оригинале, иначе можно убрать)
-    /* QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Ошибка при открытии файла")); return; }
-    QByteArray data = file.readAll(); file.close();
-    if (data.size() != size) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Ошибка при чтении данных файла")); return; }
-    */
-
-    // Обновление UI
     ui->lblLoaderFileName->setText( QDir::toNativeSeparators(filePath) );
-    // Обновляем размер через нашу функцию
+
     updateLoaderFileSize(filePath);
-    // Обновляем общий размер
     updateTotalFirmwareSize();
 }
 
-
-// --- Определение ProgInfo ПЕРЕД использованием ---
 #pragma pack(push, 1)
 struct ProgInfo_Original { // Назовем чуть иначе, чтобы избежать конфликта имен если ProgInfo уже где-то есть
     quint32 tableID;
@@ -672,7 +598,6 @@ struct ProgInfo_Original { // Назовем чуть иначе, чтобы и�
 };
 #pragma pack(pop)
 
-// --- !!! ФУНКЦИЯ createFirmwareFiles ИЗ ВАШЕГО САМОГО ПЕРВОГО СООБЩЕНИЯ !!! ---
 // ВАЖНО: Используем ProgInfo_Original и оригинальную логику CRC
 void Unit1::createFirmwareFiles(const QString &outputDir)
 {
@@ -680,16 +605,20 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
     QString serialBeginStr = ui->editInitialSerialNumber->text().trimmed();
     bool ok;
     int serialBegin = serialBeginStr.toInt(&ok);
-    if (serialBeginStr.isEmpty() || !ok || serialBegin <= 0) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Неверный или не указан начальный серийный номер."); return; }
+    if (serialBeginStr.isEmpty() || !ok || serialBegin <= 0) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Неверный или не указан начальный серийный номер."); return; }
     QString serialCountStr = ui->editNumberOfSerials->text().trimmed();
     int serialCount = serialCountStr.toInt(&ok);
-    if (serialCountStr.isEmpty() || !ok || serialCount <= 0) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Неверное или не указано количество номеров."); return; }
+    if (serialCountStr.isEmpty() || !ok || serialCount <= 0) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Неверное или не указано количество номеров."); return; }
 
     // Получаем пути из UI (могут быть относительными)
     QString programFilePathRel = ui->lblProgramDataFileName->text();
     QString loaderFilePathRel = ui->lblLoaderFileName->text();
-    if (programFilePathRel.startsWith("Файл:") || programFilePathRel.isEmpty() || programFilePathRel == "-") { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Файл программы не выбран."); return; }
-    if (loaderFilePathRel.startsWith("Файл:") || loaderFilePathRel.isEmpty() || loaderFilePathRel == "-") { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Файл загрузчика не выбран."); return; }
+    if (programFilePathRel.startsWith("Файл:") || programFilePathRel.isEmpty() || programFilePathRel == "-") { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Файл программы не выбран."); return; }
+    if (loaderFilePathRel.startsWith("Файл:") || loaderFilePathRel.isEmpty() || loaderFilePathRel == "-") { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Файл загрузчика не выбран."); return; }
 
     // Преобразуем в абсолютные пути
     QString currentDir = QDir::currentPath();
@@ -699,20 +628,27 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
     QFileInfo programFile(programFilePathAbs);
     QFileInfo loaderFile(loaderFilePathAbs);
     const qint64 minFileSize = 4 * 1024; // Оригинальная проверка
-    if (!programFile.exists() || !programFile.isFile() || programFile.size() < minFileSize) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", QString("Ошибка файла программы '%1' (%2 Кб).").arg(programFile.fileName()).arg(minFileSize / 1024)); return; }
-    if (!loaderFile.exists() || !loaderFile.isFile() || loaderFile.size() < minFileSize) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", QString("Ошибка файла загрузчика '%1' (%2 Кб).").arg(loaderFile.fileName()).arg(minFileSize / 1024)); return; }
-    // Проверки макс. размера
-    if (programFile.size() > ((1024 - 16) * 1024)) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Файл программы больше максимально допустимого размера (1008 Кб)."); return; }
-    if (loaderFile.size() > (16 * 1024)) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Файл загрузчика больше максимально допустимого размера (16 Кб)."); return; }
 
+    if (!programFile.exists() || !programFile.isFile() || programFile.size() < minFileSize) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", QString("Ошибка файла программы '%1' (%2 Кб).").arg(programFile.fileName()).arg(minFileSize / 1024)); return; }
+    if (!loaderFile.exists() || !loaderFile.isFile() || loaderFile.size() < minFileSize) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", QString("Ошибка файла загрузчика '%1' (%2 Кб).").arg(loaderFile.fileName()).arg(minFileSize / 1024)); return; }
+
+    // Проверки макс. размера
+    if (programFile.size() > ((1024 - 16) * 1024)) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Файл программы больше максимально допустимого размера (1008 Кб)."); return; }
+    if (loaderFile.size() > (16 * 1024)) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Файл загрузчика больше максимально допустимого размера (16 Кб)."); return; }
 
     // --- 2. Загрузка данных файлов ---
     QByteArray loaderData = loadFile(loaderFile.absoluteFilePath());
     QByteArray programData = loadFile(programFile.absoluteFilePath());
-    if (loaderData.isEmpty()) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Не удалось прочитать файл загрузчика: " + loaderFile.absoluteFilePath()); return; }
-    if (programData.isEmpty()) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Не удалось прочитать файл программы: " + programFile.absoluteFilePath()); return; }
+    if (loaderData.isEmpty()) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Не удалось прочитать файл загрузчика: " + loaderFile.absoluteFilePath()); return; }
+    if (programData.isEmpty()) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Не удалось прочитать файл программы: " + programFile.absoluteFilePath()); return; }
 
-    // --- 3. Подготовка базового буфера прошивки (Большого) ---
+    // --- 3. Подготовка базового буфера прошивки ---
     const qsizetype firmwareBufferSize = 1024 * 1024; // 1MB
     const qsizetype loaderMaxSize = 16 * 1024;
     const qsizetype programOffset = loaderMaxSize;
@@ -724,9 +660,12 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
     const qsizetype actualDataSize = loaderMaxSize + qsizetype(programData.size());
 
     // Проверки смещений
-    if (actualDataSize > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", QString("Общий размер прошивки (%1 байт) превышает максимальный размер буфера (%2 байт).").arg(actualDataSize).arg(firmwareBufferSize)); return; }
-    if (progInfoOffset + qsizetype(sizeof(ProgInfo_Original)) > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Смещение таблицы ProgInfo выходит за пределы буфера."); return; }
-    if (serialNumberOffset + serialNumberBlockSize > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Смещение серийного номера выходит за пределы буфера."); return; }
+    if (actualDataSize > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", QString("Общий размер прошивки (%1 байт) превышает максимальный размер буфера (%2 байт).").arg(actualDataSize).arg(firmwareBufferSize)); return; }
+    if (progInfoOffset + qsizetype(sizeof(ProgInfo_Original)) > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Смещение таблицы ProgInfo выходит за пределы буфера."); return; }
+    if (serialNumberOffset + serialNumberBlockSize > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(),
+                              "Ошибка", "Смещение серийного номера выходит за пределы буфера."); return; }
 
     QByteArray baseFirmwareBuffer(firmwareBufferSize, '\xFF'); // Заполняем FF
     qsizetype loaderSizeToCopy = qMin((qsizetype)loaderData.size(), loaderMaxSize);
@@ -801,7 +740,6 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
             for (int k = 3; k >= 0; --k) { // Цикл по 4 байтам CRC
                 patchValue = (patchValue << 8) ^ inline_revTable[patchValue >> 24] ^ static_cast<quint32>(intermediateCRCBytesLE[k]);
             }
-            //-------------------------------
 
             // Ручная запись патча (patchValue) В КОНЕЦ БУФЕРА
             // Увеличиваем размер буфера на 4 байта
@@ -847,14 +785,12 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
         if (bytesWritten != currentFileSize) { QMessageBox::critical(ui->cmbRevision->window(), "Ошибка", "Ошибка записи в файл (не все байты записаны): " + outFile.fileName()); outFile.remove(); return; }
         filesCreated++;
 
-    } // Конец цикла for
+    }
 
     // --- 7. Сообщение о завершении (Оригинальное) ---
     if (filesCreated > 0) { QMessageBox::information(ui->cmbRevision->window(), "Готово", QStringLiteral("%1 файл(ов) прошивки успешно создан(о) в папке:\n%2").arg(filesCreated).arg(QDir::toNativeSeparators(outputDir))); }
     else if (serialCount > 0) { QMessageBox::warning(ui->cmbRevision->window(), "Завершено", "Не было создано ни одного файла (возможно, из-за ошибок)."); }
 }
-// --- Конец функции createFirmwareFiles ---
-
 
 // Функция generateCRCTables из оригинала
 void Unit1::generateCRCTables(quint32* fwdTable, quint32* revTable)
@@ -876,8 +812,7 @@ void Unit1::generateCRCTables(quint32* fwdTable, quint32* revTable)
     }
 }
 
-
-// Функция calculateReverseCRC из оригинала (если она нужна для чего-то еще)
+/* Функция calculateReverseCRC из оригинала (если она нужна для чего-то еще)
 // Если она использовалась ТОЛЬКО в createFirmwareFiles, то она больше не нужна,
 // т.к. логика патча встроена в createFirmwareFiles.
 // quint32 Unit1::calculateReverseCRC(const QByteArray &data_with_placeholders, quint32 targetCRC, const quint32* revTable)
@@ -889,10 +824,8 @@ void Unit1::generateCRCTables(quint32* fwdTable, quint32* revTable)
 //         desired = (desired << 8) ^ revTable[(desired >> 24) ^ bufferPtr[i]];
 //     }
 //     return desired;
-// }
+} */
 
-
-// Функция loadFile из оригинала
 QByteArray Unit1::loadFile(const QString &filePath) // Ожидает абсолютный путь
 {
     QFile file(filePath);
@@ -909,7 +842,6 @@ QByteArray Unit1::loadFile(const QString &filePath) // Ожидает абсол
     return data;
 }
 
-// Функция onBtnCreateFileManualClicked из оригинала
 void Unit1::onBtnCreateFileManualClicked()
 {
     QString dir = QFileDialog::getExistingDirectory(ui->cmbRevision->window(), tr("Выберите папку для сохранения прошивок"), QDir::currentPath());
@@ -917,7 +849,6 @@ void Unit1::onBtnCreateFileManualClicked()
     createFirmwareFiles(dir); // Передаем выбранный АБСОЛЮТНЫЙ путь
 }
 
-// Функция onBtnCreateFileAutoClicked из оригинала
 void Unit1::onBtnCreateFileAutoClicked()
 {
     // Используем SaveFirmware, сохраненный в onRevisionChanged

@@ -1,25 +1,8 @@
-// Файл unit2.cpp (полный, с имитацией Now() через QDateTime)
-
 #include "unit2.h"
-#include "mainwindow.h" // Might need for context/parent access
-#include <QDebug>
-#include <QFileInfo>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QComboBox>
-#include <QDir>
-#include <QSaveFile>
-#include <QDataStream>
-#include <QtEndian>
-#include "crcunit.h" // Убедитесь, что calcCrc32 здесь объявлен
-#include <QDateTime> // <<<--- Нужно для QDateTime
-#include <QRegularExpression>
+#include "mainwindow.h"
+#include "crcunit.h"
+
 #include <stdexcept>
-
-
-// --- Add to top of unit2.cpp OR in a new header file ---
-#include <QtGlobal>
-#include <cstring>
 
 // Define types like in C++Builder
 typedef signed char s8;
@@ -35,8 +18,8 @@ typedef quint16 quint16_t;
 typedef quint32 quint32_t;
 typedef qint32  qint32_t;
 
-
 #pragma pack(push,1)
+
 struct TUpdateTask
 {
     quint32_t FileId;
@@ -75,6 +58,7 @@ struct TUpdateTask
 #define CMD_UPDATE_SAME_SERIAL           ((quint32_t)0x00000002)
 #define CMD_UPDATE_SAME_DEV_ID           ((quint32_t)0x00000003)
 #define CMD_NO_MODEL_CHECK               ((quint32_t)0x00000080)
+
 // Дополнительные команды
 #define CMD_SAVE_BTH_NAME                ((quint32_t)0x00000001)
 #define CMD_SAVE_BTH_ADDR                ((quint32_t)0x00000002)
@@ -84,8 +68,6 @@ struct TUpdateTask
 #define CMD_SAVE_SERIAL                  ((quint32_t)0x00000020)
 #define CMD_SAVE_MODEL_INFO              ((quint32_t)0x00000040)
 #define CMD_SET_RDP_LV1                  ((quint32_t)0x00000001)
-// --- End of definitions ---
-
 
 // Function to perform the PSP XOR encoding
 void applyPSPEncoding(quint8_t* buffer, qsizetype size, quint32_t seed) {
@@ -96,8 +78,12 @@ void applyPSPEncoding(quint8_t* buffer, qsizetype size, quint32_t seed) {
     }
 }
 
+Unit2::Unit2(Ui::MainWindow *ui, QObject *parent)
+    : QObject(parent), ui(ui)
+{
+    clearUIFields();
+}
 
-// --- Function to create update files ---
 void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
     qDebug() << "--- Starting createUpdateFiles ---";
     qDebug() << "Output file path:" << outputFileAbsPath;
@@ -150,13 +136,8 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         if (!progBeginStr.isEmpty() && !ok) throw std::runtime_error(tr("Начальный адрес программы указан неверно (ожидается HEX).").toStdString());
 
         qDebug() << "UI Values: Model:" << devModel << "Desc:" << devDesc << "Serial:" << devSerial << "ID:" << devId;
-        qDebug() << "Addresses: EraseStart: 0x" << QString::number(eraseBeginAddr, 16) << "EraseEnd: 0x" << QString::number(eraseEndAddr, 16) << "ProgStart: 0x" << QString::number(progBeginAddr, 16);
-
-        // Address Range Checks... (same as before)
-        // ... (validation code) ...
-
-        // Checkbox Dependencies... (same as before)
-        // ... (validation code) ...
+        qDebug() << "Addresses: EraseStart: 0x" << QString::number(eraseBeginAddr, 16) << "EraseEnd: 0x" <<
+            QString::number(eraseEndAddr, 16) << "ProgStart: 0x" << QString::number(progBeginAddr, 16);
 
         // --- 2. Load Program Data ---
         QFile file(programFilePathAbs);
@@ -189,12 +170,11 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         } else {
             qInfo() << "Program data is empty, programCRC = 0";
         }
-        // Store Little Endian version in struct
+
         updateTask.ProgramBeginAddr = qToLittleEndian(progBeginAddr);
         updateTask.ProgramSize = qToLittleEndian(static_cast<quint32_t>(programData.size()));
         updateTask.ProgramCrc = qToLittleEndian(programCRC);
 
-        // Build command masks (Host byte order)
         quint32_t loaderBaseCmd = 0;
         if (ui->main_prog->isChecked()) loaderBaseCmd |= CMD_IS_BASE_PROGRAM;
         if (ui->OnlyForEnteredSN->isChecked()) loaderBaseCmd |= CMD_UPDATE_SAME_SERIAL;
@@ -211,20 +191,16 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         if (ui->SaveDevSerial->isChecked()) loaderBeforeCmd |= CMD_SAVE_SERIAL;
         if (ui->Lvl1MemProtection->isChecked()) loaderBeforeCmd |= CMD_SET_RDP_LV1;
 
-        // Store LE versions in struct
         updateTask.LoaderBaseCmd = qToLittleEndian(loaderBaseCmd);
         updateTask.LoaderExtCmd = 0;
         updateTask.LoaderBeforeCmd = qToLittleEndian(loaderBeforeCmd);
         updateTask.LoaderAfterCmd = 0;
 
-        // <<< ИСПОЛЬЗОВАНИЕ QDateTime для поля Time >>>
         qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
         quint64 nowMsLe = qToLittleEndian(static_cast<quint64>(nowMs));
         memcpy(updateTask.Time, &nowMsLe, sizeof(updateTask.Time));
         qDebug() << "Set Time field using Qt msecs since epoch (LE):" << QByteArray(reinterpret_cast<char*>(updateTask.Time), 8).toHex().toUpper();
-        // <<< КОНЕЦ ИЗМЕНЕНИЯ >>>
 
-        // Calculate header CRC *after* filling all fields including Time
         qsizetype headerSizeForCrc = sizeof(TUpdateTask) - sizeof(quint32_t);
         QByteArray headerDataForCrc = QByteArray::fromRawData(
             reinterpret_cast<const char*>(&updateTask),
@@ -234,7 +210,6 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         qInfo() << "Calculated headerCRC (HOST):  0x" + QString::number(headerCRC, 16).toUpper().rightJustified(8, '0');
 
         updateTask.Crc = qToLittleEndian(headerCRC); // Store LE version
-
 
         // --- 4. PSP Encoding ---
         TUpdateTask encodedTask = updateTask; // Copy final struct
@@ -301,20 +276,12 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
     }
 }
 
-// --- Constructor and other methods ---
-
-Unit2::Unit2(Ui::MainWindow *ui, QObject *parent)
-    : QObject(parent), ui(ui)
-{
-    clearUIFields(); // Start with clean fields
-}
-
 void Unit2::updateUI(const ExtendedRevisionInfo& info) {
     qDebug() << "Unit2::updateUI for category:" << info.category;
     if (info.category.isEmpty() || info.category == "OthDev") {
         clearUIFields();
     } else {
-        // Update QComboBox cmbDeviceModel
+
         if (info.bldrDevModel.isEmpty()) {
             if (ui->cmbDeviceModel->currentIndex() != -1) {
                 ui->cmbDeviceModel->setCurrentIndex(-1);
@@ -333,14 +300,10 @@ void Unit2::updateUI(const ExtendedRevisionInfo& info) {
             }
         }
 
-        // Update other fields based on info
         ui->editProgramStartAddress->setText(info.beginAddress.isEmpty() ? "0x0" : info.beginAddress);
-
-
         ui->lblUpdateProgramDataFileName->setText(info.mainProgramFile.isEmpty() ? "Файл: -" : QDir::toNativeSeparators(info.mainProgramFile));
         updateUpdateProgramDataFileSize(info.mainProgramFile);
 
-        // Set checkboxes based on info struct
         ui->main_prog->setChecked(info.cmdMainProg);
         ui->OnlyForEnteredSN->setChecked(info.cmdOnlyForEnteredSN);
         ui->OnlyForEnteredDevID->setChecked(info.cmdOnlyForEnteredDevID);
@@ -367,7 +330,7 @@ void Unit2::clearUIFields() {
     if (ui->cmbDeviceModel->currentIndex() != -1) {
         ui->cmbDeviceModel->setCurrentIndex(-1);
     }
-    // Clear all manual input fields and set defaults
+
     ui->editProgramStartAddress->clear();
     ui->editDeviceDescriptor->clear();
     ui->editSerialNumber->clear();
@@ -376,7 +339,6 @@ void Unit2::clearUIFields() {
     ui->lblUpdateProgramDataFileName->setText("Файл: -");
     ui->lblUpdateProgramDataFileSize->setText("Размер: -");
 
-    // Reset all checkboxes
     ui->main_prog->setChecked(false);
     ui->OnlyForEnteredSN->setChecked(false);
     ui->OnlyForEnteredDevID->setChecked(false);
@@ -390,8 +352,6 @@ void Unit2::clearUIFields() {
     ui->SaveDevModel->setChecked(false);
     ui->Lvl1MemProtection->setChecked(false);
 }
-
-// --- Slots Connected Directly from MainWindow UI ---
 
 void Unit2::onBtnChooseUpdateProgramDataFileClicked()
 {
@@ -434,7 +394,6 @@ void Unit2::onBtnUpdateCreateFileManualClicked()
     QString suggestedFileName = baseName + "_Update.bin"; // Added _Update
 
     QString initialDir = QDir::currentPath();
-    // Consider getting default dir from config/MainWindow later
 
     QString filePath = QFileDialog::getSaveFileName(
         ui->cmbUpdateRevision->window(),
@@ -453,13 +412,6 @@ void Unit2::onBtnUpdateShowInfoClicked()
     QMessageBox::information(ui->btnUpdateShowInfo->window(), tr("Инфо (Обновление)"),
                              tr("Создание файлов обновления прошивки для устройств.\nВыберите ревизию, файл программы и необходимые параметры."));
 }
-
-#include <QMessageBox> // Для диалоговых окон
-#include <QDir>        // Для работы с директориями
-#include <QDebug>      // Для вывода отладочной информации
-#include <QStringList> // Для списков строк (путей)
-
-
 
 void Unit2::onBtnClearUpdateRevisionClicked()
 {
@@ -494,7 +446,7 @@ void Unit2::onBtnClearUpdateRevisionClicked()
     // 3. Готовим список путей для сообщения пользователю (логика без изменений)
     QStringList pathsToDeleteDisplay;
     QString currentDir = QDir::currentPath();
-    for (const QString &pathFragment : qAsConst(updateAutoSavePaths)) {
+    for (const QString &pathFragment : std::as_const(updateAutoSavePaths)) {
         QString fullDisplayPath = QDir(currentDir).filePath(pathFragment);
         pathsToDeleteDisplay << QDir::toNativeSeparators(fullDisplayPath);
     }
@@ -525,7 +477,7 @@ void Unit2::onBtnClearUpdateRevisionClicked()
     int failCount = 0;
     QStringList errorDetails;
 
-    for (const QString &pathFragment : qAsConst(updateAutoSavePaths)) {
+    for (const QString &pathFragment : std::as_const(updateAutoSavePaths)) {
         QString fullPathToDelete = QDir(currentDir).filePath(pathFragment);
         QDir dirToDelete(fullPathToDelete);
 
@@ -564,7 +516,7 @@ void Unit2::onBtnClearUpdateRevisionClicked()
     }
     qInfo() << "Очистка папок обновлений: Операция завершена.";
 }
-// --- Полная реализация слота для создания общего файла обновления ---
+
 void Unit2::onBtnCreateCommonUpdateFileClicked()
 {
     qDebug() << "--- Запуск создания ОБЩЕГО файла обновления ---";
@@ -757,8 +709,8 @@ void Unit2::onBtnCreateCommonUpdateFileClicked()
             qInfo() << "  CRC заголовка (HOST): 0x" + QString::number(headerCRC, 16).toUpper().rightJustified(8, '0');
 
             // --- 4b. PSP Encoding ---
-            TUpdateTask encodedTask = currentTask; // Копируем заголовок
-            QByteArray encodedData = programData; // Копируем данные
+            TUpdateTask encodedTask = currentTask;
+            QByteArray encodedData = programData;
 
             qDebug() << "  Шифрование заголовка (размер:" << headerSizeForCrc << ") сидом 0x" << QString::number(headerCRC, 16).toUpper();
             applyPSPEncoding(reinterpret_cast<quint8_t*>(&encodedTask), headerSizeForCrc, headerCRC);
@@ -782,10 +734,9 @@ void Unit2::onBtnCreateCommonUpdateFileClicked()
                 }
             }
             qDebug() << "  Блок для ревизии" << category << "успешно записан в общий файл.";
-            blocksAdded++; // Увеличиваем счетчик только при успешной записи блока
+            blocksAdded++;
 
         } catch (const std::runtime_error& e) {
-            // Ошибка при обработке ЭТОЙ ревизии
             qWarning() << "  Критическая ошибка при обработке ревизии" << category << "для общего файла:" << e.what();
             // Добавляем в ОБА списка: и ошибок, и пропущенных
             errorsList << tr("Ревизия '%1': %2").arg(category).arg(QString::fromStdString(e.what()));
@@ -793,9 +744,7 @@ void Unit2::onBtnCreateCommonUpdateFileClicked()
             revisionsSkipped++;
             continue; // Переходим к следующей ревизии
         }
-        // === КОНЕЦ БЛОКА ДЛЯ ОДНОЙ РЕВИЗИИ ===
-
-    } // Конец цикла while по ревизиям
+    }
 
     // 5. Завершаем запись и закрываем файл
     bool commitOk = saveFile.commit();
@@ -860,16 +809,10 @@ void Unit2::onBtnCreateCommonUpdateFileClicked()
         }
     }
 
-    // Показываем итоговое сообщение
     QMessageBox msgBox(icon, resultTitle, resultMessage, QMessageBox::Ok, ui->btnCreateCommonUpdateFile->window());
-    // Увеличим ширину окна сообщения, если текст длинный
-    // if (resultMessage.length() > 200) { // Примерная оценка
-    //     msgBox.setStyleSheet("QMessageBox { messagebox-width: 500px; }");
-    // }
     msgBox.exec();
 }
 
-// --- Private Helper Methods ---
 void Unit2::updateUpdateProgramDataFileSize(const QString &filePath)
 {
     if (filePath.isEmpty() || filePath.startsWith("Файл:") || filePath == "-") {

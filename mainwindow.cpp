@@ -1,7 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "unit1.h" // Include Unit1 header
-#include "unit2.h" // Include Unit2 header
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,10 +9,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // --- Настройки окна (ИЗ ВАШЕГО КОДА) ---
-    setFixedSize(size()); // Изначально фиксируем размер
+    setFixedSize(size());
     setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
-    // Центрирование окна (ИЗ ВАШЕГО КОДА)
     QScreen *screen = QApplication::primaryScreen();
     if (screen) {
         QRect screenGeometry = screen->geometry();
@@ -23,11 +19,10 @@ MainWindow::MainWindow(QWidget *parent)
         int windowWidth = this->width();
         int windowHeight = this->height();
         int x = (screenWidth - windowWidth) / 2;
-        int y = (screenHeight - windowHeight) / 2 - 50; // с вашим смещением -50
+        int y = (screenHeight - windowHeight) / 2 - 50;
         this->move(x, y);
     }
 
-    // --- Экспертный режим (ИЗ ВАШЕГО КОДА) ---
     QCheckBox *expertModeCheckbox = new QCheckBox("Экспертный режим", ui->tabWidget);
     ui->tabWidget->setCornerWidget(expertModeCheckbox, Qt::TopRightCorner);
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, [this](int /*index*/) {
@@ -37,29 +32,27 @@ MainWindow::MainWindow(QWidget *parent)
         });
     });
     connect(expertModeCheckbox, &QCheckBox::toggled, this, &MainWindow::onExpertModeToggled);
-    // Запоминаем размеры для режимов (ИЗ ВАШЕГО КОДА)
-    expertSize = size();             // Текущий размер окна для экспертного режима
-    simpleSize = QSize(800, 360);    // Уменьшенный размер для простого режима
 
+    expertSize = size();
+    simpleSize = QSize(800, 360);
 
-    // --- Инициализация Unit1 и Unit2 ---
-    unit1 = new Unit1(ui, this); // Unit1 инициализируется и сам загрузит конфиг
-    unit2 = new Unit2(ui, this); // Unit2 инициализируется, данные получит позже
+    unit1 = new Unit1(ui, this);
+    unit2 = new Unit2(ui, this);
 
     // --- Загрузка конфига в MainWindow и ЗАПОЛНЕНИЕ ВСЕХ комбобоксов ---
     loadConfigAndPopulate("config.xml");
 
-    // --- Подключения для СИНХРОНИЗАЦИИ комбобоксов (теперь через общие обработчики) ---
+    // --- Подключения для СИНХРОНИЗАЦИИ комбобоксов ---
     connect(ui->cmbRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::handleRevisionComboBoxChanged);
     connect(ui->cmbUpdateRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::handleUpdateRevisionComboBoxChanged);
+
     // Подключение нового комбобокса
     connect(ui->cmbDeviceModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::handleDeviceModelComboBoxChanged);
 
-
-    // --- Подключения кнопок Unit1 НАПРЯМУЮ к слотам unit1 (ИЗ ВАШЕГО КОДА) ---
+    // Unit1
     connect(ui->btnChooseProgramDataFile, &QPushButton::clicked, unit1, &Unit1::onBtnChooseProgramDataFileClicked);
     connect(ui->btnChooseLoaderFile, &QPushButton::clicked, unit1, &Unit1::onBtnChooseLoaderFileClicked);
     connect(ui->btnCreateFileManual, &QPushButton::clicked, unit1, &Unit1::onBtnCreateFileManualClicked);
@@ -68,24 +61,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnClearRevision, &QPushButton::clicked, unit1, &Unit1::onBtnClearRevisionClicked);
     connect(ui->btnConnectAndUpload, &QPushButton::clicked, unit1, &Unit1::onBtnConnectAndUploadClicked);
 
-    // --- Подключения кнопок Unit2 (ИЗ ВАШЕГО КОДА + АВТО) ---
+    // Unit2
     connect(ui->btnChooseUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnChooseUpdateProgramDataFileClicked);
     connect(ui->btnUpdateCreateFileManual, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateCreateFileManualClicked);
     connect(ui->btnUpdateShowInfo, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateShowInfoClicked);
     connect(ui->btnClearUpdateRevision, &QPushButton::clicked, unit2, &Unit2::onBtnClearUpdateRevisionClicked);
     connect(ui->btnCreateCommonUpdateFile, &QPushButton::clicked, unit2, &Unit2::onBtnCreateCommonUpdateFileClicked);
-    // Кнопка "Авто" для Unit2 подключается к MainWindow
     connect(ui->btnUpdateCreateFileAuto, &QPushButton::clicked, this, &MainWindow::onAutoCreateUpdateTriggered);
 
-
-    // --- Инициализация UI (ИЗ ВАШЕГО КОДА) ---
-    onExpertModeToggled(false);  // Начать в простом режиме
+    onExpertModeToggled(false);
 
     // Сбросить выбор в комбобоксах после заполнения
     ui->cmbRevision->setCurrentIndex(-1);
     ui->cmbUpdateRevision->setCurrentIndex(-1);
-    ui->cmbDeviceModel->setCurrentIndex(-1); // Сбрасываем новый
-    updateUnit2UI(""); // Очистить UI для Unit2
+    ui->cmbDeviceModel->setCurrentIndex(-1);
+    updateUnit2UI("");
 }
 
 MainWindow::~MainWindow()
@@ -93,7 +83,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// --- Загрузка конфига и заполнение комбобоксов ---
 void MainWindow::loadConfigAndPopulate(const QString &filePath)
 {
     QSet<QString> deviceModelsSet; // Собираем уникальные модели BldrDevModel
@@ -106,6 +95,8 @@ void MainWindow::loadConfigAndPopulate(const QString &filePath)
     file.close();
     QDomElement root = doc.documentElement();
     if (root.tagName() != "UpdateGenerator") { QMessageBox::critical(this, "Ошибка", "Неверный корневой элемент..."); return; }
+
+    connect(unit1, &Unit1::logToInterface, this, &MainWindow::appendToLog);
 
     QStringList categories;
     QDomNodeList deviceModels = root.elementsByTagName("DeviceModel");
@@ -129,22 +120,19 @@ void MainWindow::loadConfigAndPopulate(const QString &filePath)
     if (!revisionsMap.contains("OthDev")) { ExtendedRevisionInfo othDevInfo; othDevInfo.category = "OthDev"; revisionsMap["OthDev"] = othDevInfo; categories.append("OthDev"); }
     qInfo() << "MainWindow loaded" << revisionsMap.count() << "revisions into central map.";
 
-    // Заполнение ВСЕХ трех комбобоксов
     ui->cmbRevision->blockSignals(true);
     ui->cmbUpdateRevision->blockSignals(true);
-    ui->cmbDeviceModel->blockSignals(true); // Блокируем новый комбобокс
+    ui->cmbDeviceModel->blockSignals(true);
 
     ui->cmbRevision->clear();
     ui->cmbUpdateRevision->clear();
     ui->cmbDeviceModel->clear();
 
-    // categories.sort(); // Опционально сортируем категории
     ui->cmbRevision->addItems(categories);
     ui->cmbUpdateRevision->addItems(categories);
 
-    // Заполнение cmbDeviceModel уникальными моделями
     QStringList modelList = deviceModelsSet.values();
-    modelList.sort(); // Опционально сортируем модели
+    modelList.sort();
     ui->cmbDeviceModel->addItems(modelList);
 
     ui->cmbRevision->setCurrentIndex(-1);
@@ -156,15 +144,32 @@ void MainWindow::loadConfigAndPopulate(const QString &filePath)
     ui->cmbDeviceModel->blockSignals(false);
 }
 
-// --- Слоты-обработчики изменений комбобоксов ---
+void MainWindow::appendToLog(const QString &message, bool isError)
+{
+    if (!ui || !ui->logTextEdit) return;
+
+    QString color = isError ? "red" : "blue";
+    QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+
+    QString escapedMessage = message;
+    escapedMessage.replace('&', "&");
+    escapedMessage.replace('<', "<");
+    escapedMessage.replace('>', ">");
+
+    QString htmlMessage = QString("<font color='%1'>[%2] %3</font>")
+                              .arg(color)
+                              .arg(timestamp)
+                              .arg(escapedMessage);
+
+    ui->logTextEdit->append(htmlMessage); // append добавляет текст и переводит строку
+}
+
 void MainWindow::handleRevisionComboBoxChanged(int /*index*/) {
     synchronizeComboBoxes(sender());
 }
-
 void MainWindow::handleUpdateRevisionComboBoxChanged(int /*index*/) {
     synchronizeComboBoxes(sender());
 }
-
 void MainWindow::handleDeviceModelComboBoxChanged(int /*index*/) {
     synchronizeComboBoxes(sender());
 }
@@ -172,8 +177,7 @@ void MainWindow::handleDeviceModelComboBoxChanged(int /*index*/) {
 // --- Централизованная синхронизация ---
 void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
     QComboBox* changedComboBox = qobject_cast<QComboBox*>(senderComboBox);
-    // Добавим проверку на валидность отправителя и на то, не заблокированы ли у него сигналы
-    // (чтобы избежать лишних срабатываний при программной установке)
+
     if (!changedComboBox || changedComboBox->signalsBlocked()) {
         qDebug() << "Sync: Skipping because sender is null, blocked, or not a QComboBox";
         return;
@@ -225,24 +229,19 @@ void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
         }
     } else {
         qWarning() << "Sync: Unknown sender:" << senderComboBox;
-        return; // Неизвестный отправитель
+        return;
     }
 
     qDebug() << "Sync: Determined target category:" << selectedCategory << "model:" << selectedModel << "cleared:" << selectionCleared;
 
-    // --- 2. Обновление других комбобоксов и UI ---
-
-    // Определяем целевые индексы
     int targetRevisionIndex = selectionCleared ? othDevIndexRevision : ui->cmbRevision->findText(selectedCategory);
     int targetUpdateRevisionIndex = selectionCleared ? othDevIndexUpdate : ui->cmbUpdateRevision->findText(selectedCategory);
     int targetModelIndex = (selectionCleared || selectedModel.isEmpty()) ? -1 : ui->cmbDeviceModel->findText(selectedModel);
 
-    // Проверяем, нужно ли реально менять индексы
     bool needUpdateRevision = (ui->cmbRevision->currentIndex() != targetRevisionIndex);
     bool needUpdateUpdateRevision = (ui->cmbUpdateRevision->currentIndex() != targetUpdateRevisionIndex);
     bool needUpdateDeviceModel = (ui->cmbDeviceModel->currentIndex() != targetModelIndex);
 
-    // Блокируем все сигналы перед началом изменений, чтобы избежать каскадных вызовов
     ui->cmbRevision->blockSignals(true);
     ui->cmbUpdateRevision->blockSignals(true);
     ui->cmbDeviceModel->blockSignals(true);
@@ -251,8 +250,8 @@ void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
     if (changedComboBox != ui->cmbRevision && needUpdateRevision) {
         qDebug() << "Sync: Updating cmbRevision programmatically to index" << targetRevisionIndex;
         ui->cmbRevision->blockSignals(false); // <<< РАЗБЛОКИРОВАТЬ ПЕРЕД УСТАНОВКОЙ
-        ui->cmbRevision->setCurrentIndex(targetRevisionIndex); // Сигнал должен сработать здесь
-        ui->cmbRevision->blockSignals(true);  // <<< ЗАБЛОКИРОВАТЬ СРАЗУ ПОСЛЕ
+        ui->cmbRevision->setCurrentIndex(targetRevisionIndex);
+        ui->cmbRevision->blockSignals(true);
     } else {
         qDebug() << "Sync: Skipping programmatic update for cmbRevision (either sender or index already matches)";
     }
@@ -278,22 +277,14 @@ void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
         qDebug() << "Sync: Skipping programmatic update for cmbDeviceModel (either sender or index already matches)";
     }
 
-    // --- 3. Обновляем UI для Unit2 ---
-    // Это нужно делать всегда, чтобы отразить текущее состояние, определенное категорией
     qDebug() << "Sync: Updating Unit2 UI for category:" << selectedCategory;
     updateUnit2UI(selectedCategory);
 
-    // --- 4. Разблокируем все сигналы в конце ---
-    // Важно разблокировать, чтобы пользовательские изменения снова работали
     ui->cmbRevision->blockSignals(false);
     ui->cmbUpdateRevision->blockSignals(false);
     ui->cmbDeviceModel->blockSignals(false);
-    qDebug() << "Sync: All signals unblocked.";
-
-    // Ручной вызов Unit1::onRevisionChanged больше не нужен, так как мы полагаемся на сигнал
 }
 
-// --- Обновление UI ТОЛЬКО для Unit2 ---
 void MainWindow::updateUnit2UI(const QString& category) {
     if (!unit2) return;
     // Используем "OthDev" как индикатор очистки
@@ -304,42 +295,32 @@ void MainWindow::updateUnit2UI(const QString& category) {
     }
 }
 
-
-
-// --- Вспомогательная функция поиска категории по модели ---
-// Возвращает ПЕРВУЮ найденную категорию или пустую строку
 QString MainWindow::findCategoryForModel(const QString& modelName) {
     if (modelName.isEmpty()) return "";
     // Итерация по значениям карты (ExtendedRevisionInfo)
     for (const ExtendedRevisionInfo &info : revisionsMap.values()) {
         // Ищем точное совпадение модели, исключая "OthDev"
         if (info.bldrDevModel == modelName && info.category != "OthDev") {
-            return info.category; // Нашли первое совпадение
+            return info.category;
         }
     }
-    return ""; // Не найдено подходящей категории
+    return "";
 }
 
-
-// --- ВОССТАНОВЛЕННАЯ ЛОГИКА ИЗМЕНЕНИЯ РАЗМЕРА/ПОЗИЦИЙ (ИЗ ВАШЕГО КОДА) ---
 void MainWindow::onExpertModeToggled(bool checked)
 {
-    // Управление видимостью групп в меню "Начальная прошивка"
     ui->grpProgramDataFile->setVisible(checked);
     ui->grpLoaderFile->setVisible(checked);
     ui->lblNewCrc32->setVisible(checked);
     ui->editNewCrc32->setVisible(checked);
     ui->chkUpdateCrc32->setVisible(checked);
 
-    // Управление видимостью групп в меню "Обновление прошивки"
     ui->grpUpdateProgramDataFile->setVisible(checked);
     ui->grpUpdateParameters->setVisible(checked);
-    // В экспертном режиме показываем комбобокс модели, в простом - нет
-    ui->cmbDeviceModel->setVisible(checked);      // Сам комбобокс
+    ui->cmbDeviceModel->setVisible(checked);
 
-    // Изменение размера и позиций (ТОЧНО КАК В ВАШЕМ КОДЕ, но учтём cmbDeviceModel)
     if (checked) {
-        setFixedSize(expertSize);  // Полный размер для экспертного режима
+        setFixedSize(expertSize);
 
         // Меню "Начальная прошивка" - позиции из вашего кода
         ui->btnShowInfo->move(10, 620);
@@ -358,9 +339,9 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->btnUpdateCreateFileManual->move(650, 620);
         ui->btnCreateCommonUpdateFile->move(210, 620);
     } else {
-        setFixedSize(simpleSize);  // Уменьшенный размер для простого режима
+        setFixedSize(simpleSize);
 
-        // Меню "Начальная прошивка" - позиции из вашего кода
+        // Меню "Начальная прошивка"
         ui->btnShowInfo->move(10, 260);
         ui->btnCreateFileAuto->move(470, 260);
         ui->btnCreateFileManual->move(650, 260);
@@ -371,14 +352,13 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() - 10);
         ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() - 10);
 
-        // Меню "Обновление прошивки" - позиции из вашего кода
+        // Меню "Обновление прошивки"
         ui->btnUpdateShowInfo->move(10, 260);
         ui->btnUpdateCreateFileAuto->move(470, 260);
         ui->btnUpdateCreateFileManual->move(650, 260);
         ui->btnCreateCommonUpdateFile->move(210, 260);
     }
 
-    // Корректировка чекбокса (ИЗ ВАШЕГО КОДА)
     QTimer::singleShot(0, this, [this]() {
         QWidget *cornerWidget = ui->tabWidget->cornerWidget(Qt::TopRightCorner);
         if (cornerWidget) {
@@ -388,7 +368,6 @@ void MainWindow::onExpertModeToggled(bool checked)
     });
 }
 
-// --- ВОССТАНОВЛЕН showEvent (ИЗ ВАШЕГО КОДА) ---
 void MainWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
@@ -400,44 +379,42 @@ void MainWindow::showEvent(QShowEvent *event)
         }
     });
 }
-// --- Слот для кнопки "Авто" в Unit2 ---
+
 void MainWindow::onAutoCreateUpdateTriggered() {
     if (!unit2) return;
     QString currentCategory = ui->cmbUpdateRevision->currentText();
-    if (currentCategory.isEmpty() || currentCategory == "OthDev" || !revisionsMap.contains(currentCategory)) { QMessageBox::warning(this, "Внимание", "Выберите ревизию (кроме OthDev) для авто-создания файла обновления."); return; }
+    if (currentCategory.isEmpty() || currentCategory == "OthDev" || !revisionsMap.contains(currentCategory)) {
+        QMessageBox::warning(this, "Внимание", "Выберите ревизию (кроме OthDev) для авто-создания файла обновления."); return; }
 
     const ExtendedRevisionInfo& info = revisionsMap.value(currentCategory);
-    if (info.saveUpdatePath.isEmpty()) { QMessageBox::warning(this, "Внимание", "Путь для авто-сохранения обновления (<SaveUpdate>) не определен в config.xml для ревизии: " + currentCategory); return; }
+    if (info.saveUpdatePath.isEmpty()) { QMessageBox::warning(this, "Внимание",
+                             "Путь для авто-сохранения обновления (<SaveUpdate>) не определен в config.xml для ревизии: " + currentCategory); return; }
 
     QString currentDir = QDir::currentPath();
-    // Путь к ПАПКЕ автосохранения
     QString outDirAbs = QDir(currentDir).filePath(info.saveUpdatePath);
 
-    // Создаем папку, если ее нет
     QDir dir(outDirAbs);
     if (!dir.exists() && !dir.mkpath(".")) {
         QMessageBox::critical(this, "Ошибка", "Не удалось создать папку для авто-сохранения обновления:\n" + QDir::toNativeSeparators(outDirAbs)); return;
     }
 
-    // Формируем ПОЛНЫЙ ПУТЬ К ФАЙЛУ (имя файла по умолчанию)
-    QString baseName = currentCategory; // Используем категорию как базовое имя
-    baseName.replace(QRegularExpression(R"([\\/:*?"<>|])"), "_"); // Очистка имени
-    QString outFilePathAbs = dir.filePath(baseName + "_Update.bin"); // Или просто "FirmwareUpdate.bin"
+    QString baseName = currentCategory;
+    baseName.replace(QRegularExpression(R"([\\/:*?"<>|])"), "_");
+    QString outFilePathAbs = dir.filePath(baseName + "_Update.bin");
 
     qInfo() << "Triggering auto-create update in Unit2 for file:" << outFilePathAbs;
-    // Передаем ПОЛНЫЙ ПУТЬ К ФАЙЛУ в createUpdateFiles
+
     unit2->createUpdateFiles(outFilePathAbs);
 }
 
 QSet<QString> MainWindow::getUpdateAutoSavePaths() const
 {
     QSet<QString> updatePaths;
-    // Итерируем по всем значениям (ExtendedRevisionInfo) в карте
-    QMapIterator<QString, ExtendedRevisionInfo> i(revisionsMap);
+        QMapIterator<QString, ExtendedRevisionInfo> i(revisionsMap);
+
     while (i.hasNext()) {
         i.next();
         const ExtendedRevisionInfo& info = i.value();
-        // Добавляем непустой путь в set (дубликаты автоматически игнорируются)
         if (!info.saveUpdatePath.isEmpty()) {
             updatePaths.insert(info.saveUpdatePath);
         }
