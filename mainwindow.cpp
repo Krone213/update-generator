@@ -353,8 +353,8 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->lblTotalFirmwareSize->move(10, 146);
         ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() - 10);
         ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() - 10);
-        ui->logTextEdit->move(365, 77);
-        ui->logTextEdit->setFixedSize(387, 64);
+        ui->logTextEdit->move(365, 80);
+        ui->logTextEdit->setFixedSize(387, 61);
 
         // Меню "Обновление прошивки"
         ui->btnUpdateShowInfo->move(10, 260);
