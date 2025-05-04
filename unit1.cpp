@@ -21,6 +21,10 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     m_retryTimer->setSingleShot(true);
     connect(m_retryTimer, &QTimer::timeout, this, &Unit1::retryProgramAttempt);
 
+    m_animationTimer = new QTimer(this);
+    m_animationTimer->setInterval(250);
+    connect(m_animationTimer, &QTimer::timeout, this, &Unit1::updateLoadingAnimation);
+
     ui->lblConnectionStatus->setVisible(false);
     loadConfig("config.xml");
     connect(ui->cmbRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -62,8 +66,9 @@ void Unit1::onBtnConnectAndUploadClicked()
     }
     if (!QFile::exists(m_stLinkCliPath)) {
         emit logToInterface("ST-LINK_CLI.exe не найден.", true);
-        ui->lblConnectionStatus->setText("<font color='red'><b>✗ (Нет CLI)</b></font>");
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
         ui->lblConnectionStatus->setVisible(true);
+        m_animationTimer->stop();
         statusTimer->start(2000);
         return;
     }
@@ -146,10 +151,13 @@ void Unit1::onBtnConnectAndUploadClicked()
 
     emit logToInterface("--- Начало программирования (файл: " + QFileInfo(m_firmwareFilePath).fileName() + ") ---", false);
     ui->btnConnectAndUpload->setEnabled(false);
-    ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка...</b></font>");
+    ui->lblConnectionStatus->setText("<font color='blue'><b>...</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     statusTimer->stop();
     m_retryTimer->stop();
+    m_animationFrame = -1;
+    updateLoadingAnimation();
+    m_animationTimer->start();
     m_programAttemptsLeft = m_maxProgramAttempts;
     executeProgramAttempt();
 }
@@ -163,10 +171,18 @@ void Unit1::executeProgramAttempt()
     }
 
     qDebug() << "Попытка программирования (" << (m_maxProgramAttempts - m_programAttemptsLeft + 1) << "/" << m_maxProgramAttempts << ")...";
+    ui->logTextEdit->clear();
     m_programAttemptsLeft--;
 
     m_stLinkProcess->readAllStandardOutput();
     m_stLinkProcess->readAllStandardError();
+
+    if (!m_animationTimer->isActive()) {
+        m_animationFrame = -1;
+        updateLoadingAnimation();
+        m_animationTimer->start();
+        ui->lblConnectionStatus->setVisible(true);
+    }
 
     emit logToInterface("Запуск: " + m_stLinkCliPath + " " + m_currentCommandArgs.join(" "), false);
     m_stLinkProcess->start(m_stLinkCliPath, m_currentCommandArgs);
@@ -182,11 +198,13 @@ void Unit1::handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus)
     if (!stdOutData.isEmpty()) qDebug() << "[STLink STDOUT (final)]" << QString::fromLocal8Bit(stdOutData).trimmed();
     if (!stdErrData.isEmpty()) qDebug() << "[STLink STDERR (final)]" << QString::fromLocal8Bit(stdErrData).trimmed();
 
+    m_animationTimer->stop();
+
     bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
 
     if (success) {
         emit logToInterface("Успешное программирование!", false);
-        ui->lblConnectionStatus->setText("<font color='green'><b>✓ Прошито</b></font>");
+        ui->lblConnectionStatus->setText("<font color='green'><b>✓</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
         m_retryTimer->stop();
@@ -198,13 +216,13 @@ void Unit1::handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus)
                                                                    m_programAttemptsLeft).arg(m_maxProgramAttempts), true);
         if (m_programAttemptsLeft > 0) {
             qDebug() << "Запуск таймера для следующей попытки через" << m_retryTimer->interval() << "мс";
-            ui->lblConnectionStatus->setText(QString("<font color='orange'><b>✗ Попытка %1</b></font>")
+            ui->lblConnectionStatus->setText(QString("<font color='orange'><b>✗ %1</b></font>")
                                                  .arg(m_maxProgramAttempts - m_programAttemptsLeft));
             ui->lblConnectionStatus->setVisible(true);
             m_retryTimer->start();
         } else {
             emit logToInterface("Достигнуто максимальное количество попыток. Ошибка прошивки.", true);
-            ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка прошивки</b></font>");
+            ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
             ui->lblConnectionStatus->setVisible(true);
             statusTimer->start(3000);
             m_retryTimer->stop();
@@ -220,7 +238,8 @@ void Unit1::handleStLinkError(QProcess::ProcessError error)
     emit logToInterface("Ошибка QProcess: " + m_stLinkProcess->errorString(), true);
     qDebug() << "Код ошибки:" << static_cast<int>(error) << "Описание:" << m_stLinkProcess->errorString();
 
-    ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка запуска CLI</b></font>");
+    m_animationTimer->stop();
+    ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     statusTimer->start(3000);
 
@@ -240,7 +259,7 @@ void Unit1::retryProgramAttempt()
         m_programAttemptsLeft = 0;
         ui->btnConnectAndUpload->setEnabled(true);
         m_currentCommandArgs.clear();
-        ui->lblConnectionStatus->setText("<font color='red'><b>✗ Ошибка состояния</b></font>");
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
     }
@@ -267,7 +286,24 @@ void Unit1::handleStLinkStdErr()
 
 void Unit1::hideConnectionStatus()
 {
+    if (m_animationTimer->isActive()) {
+        m_animationTimer->stop();
+    }
+
     ui->lblConnectionStatus->setVisible(false);
+    ui->lblConnectionStatus->setText("");
+}
+
+void Unit1::updateLoadingAnimation() {
+    m_animationFrame = (m_animationFrame + 1) % 4;
+    QString text = "<font color='blue'><b>...";
+
+    for (int i = 0; i < m_animationFrame; ++i) {
+        text += ".";
+    }
+    text += "<b></font>";
+
+    ui->lblConnectionStatus->setText(text);
 }
 
 void Unit1::onBtnShowInfoClicked()

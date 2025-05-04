@@ -332,6 +332,8 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->lblTotalFirmwareSize->move(10, 210);
         ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() + 10);
         ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() + 10);
+        ui->logTextEdit->move(490, 85);
+        ui->logTextEdit->setFixedSize(261, 120);
 
         // Меню "Обновление прошивки" - позиции из вашего кода
         ui->btnUpdateShowInfo->move(10, 620);
@@ -351,6 +353,8 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->lblTotalFirmwareSize->move(10, 146);
         ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() - 10);
         ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() - 10);
+        ui->logTextEdit->move(365, 77);
+        ui->logTextEdit->setFixedSize(387, 64);
 
         // Меню "Обновление прошивки"
         ui->btnUpdateShowInfo->move(10, 260);

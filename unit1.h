@@ -46,6 +46,9 @@
         Ui::MainWindow *ui;
         QTimer *statusTimer;
 
+        QTimer *m_animationTimer;
+        int m_animationFrame;
+
         // --- Члены класса из оригинала ---
         QMap<QString, RevisionInfo> revisionsMap; // Карта для хранения данных ревизий Unit1
         QSet<QString> autoSavePaths;  // Множество всех путей автосохранения из <SaveFirmware>
@@ -100,6 +103,7 @@
         void handleStLinkError(QProcess::ProcessError error);
         void handleStLinkStdOut();
         void handleStLinkStdErr();
+        void updateLoadingAnimation();
 
         void retryProgramAttempt();
         void cleanupTemporaryFile();
