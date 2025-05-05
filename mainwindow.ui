@@ -235,77 +235,76 @@ QTabWidget::pane {
 }
 
 QTabWidget::tab-bar {
-    left: 5px; /* Indent to align with pane */
+    left: 5px;
 }
 
-QTabBar::tab { /* General tab style */
-    background-color: #FFFFFF; /* Light blue-grey inactive */
-    color: #37474F; /* Darker blue-grey text for inactive tabs */
+QTabBar::tab {
+    background-color: #FFFFFF;
+    color: #37474F;
     border: 1px solid #BDBDBD;
     border-bottom: none;
     padding: 8px 15px;
     margin-right: 2px;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
-    min-width: 120px; /* Give tabs some minimum width */
+    min-width: 120px;
 }
 
 QTabBar::tab:selected {
-    background-color: #FFFFFF; /* Match pane background */
-    color: #1E88E5; /* Brighter blue for selected text */
+    background-color: #FFFFFF;
+    color: #1E88E5;
     border: 1px solid #BDBDBD;
-    border-bottom: 1px solid #FFFFFF; /* Hide bottom border to merge */
-    border-top: 3px solid #42A5F5; /* Accent blue top line */
-    margin-bottom: -1px; /* Pull tab down slightly */
+    border-bottom: 1px solid #FFFFFF;
+    border-top: 3px solid #42A5F5;
+    margin-bottom: -1px;
     font-weight: bold;
 }
 
 QTabBar::tab:!selected {
-    margin-top: 2px; /* Push non-selected tabs down slightly */
+    margin-top: 2px;
 }
 
 QTabBar::tab:!selected:hover {
-    background-color: #E0E0E0; /* Lighter grey on hover */
+    background-color: #E0E0E0;
     color: #000000;
 }
 
 QGroupBox {
-    background-color: #FFFFFF; /* White background */
-    border: 1px solid #BDBDBD; /* Subtle border */
+    background-color: #FFFFFF;
+    border: 1px solid #BDBDBD;
     border-radius: 4px;
-    margin-top: 15px; /* Space for the title */
+    margin-top: 15px;
     padding: 10px;
-    padding-top: 15px; /* More space inside top */
+    padding-top: 15px;
 }
 
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;
     padding: 0 5px 0 5px;
-    left: 10px; /* Indent title slightly */
-    color: #546E7A; /* Blue-grey title text */
-    background-color: #FFFFFF; /* Ensure title background matches groupbox */
+    left: 10px;
+    color: #546E7A;
+    background-color: #FFFFFF;
     border: none;
     font-weight: bold;
 }
 
 QPushButton {
-    background-color: #E0E0E0; /* Light grey button */
+    background-color: #E0E0E0;
     color: #212121;
     border: 1px solid #BDBDBD;
-    padding: 6px 15px; /* Slightly more padding */
+    padding: 6px 15px;
     border-radius: 4px;
-    min-height: 20px; /* Ensure consistent height */
-    font-size: 10pt;
+    min-height: 20px;
 }
 
 QPushButton:hover {
-    background-color: #EEEEEE; /* Lighter grey on hover */
-    border-color: #9E9E9E; /* Slightly darker border on hover */
+    background-color: #EEEEEE;
+    border-color: #9E9E9E;
 }
 
 QPushButton:pressed {
-    background-color: #D5D5D5; /* Darker grey when pressed */
+    background-color: #D5D5D5;
 }
 
 QPushButton:disabled {
@@ -314,27 +313,31 @@ QPushButton:disabled {
     border-color: #E0E0E0;
 }
 
-QPushButton#btnUpdateCreateFileAuto, QPushButton#btnCreateFileAuto, QPushButton#btnConnectAndUpload
-{
-   background-color: #42A5F5; /* Accent blue */
+QPushButton#btnUpdateCreateFileAuto,
+QPushButton#btnCreateFileAuto,
+QPushButton#btnConnectAndUpload {
+   background-color: #42A5F5;
    color: white;
    border: none;
    font-weight: bold;
 }
 
-QPushButton#btnUpdateCreateFileAuto:hover, QPushButton#btnCreateFileAuto:hover, QPushButton#btnConnectAndUpload:hover
-{
-   background-color: #1E88E5; /* Darker blue on hover */
+QPushButton#btnUpdateCreateFileAuto:hover,
+QPushButton#btnCreateFileAuto:hover,
+QPushButton#btnConnectAndUpload:hover {
+   background-color: #1E88E5;
 }
 
-QPushButton#btnUpdateCreateFileAuto:pressed, QPushButton#btnCreateFileAuto:pressed, QPushButton#btnConnectAndUpload:pressed
-{
-   background-color: #0D47A1; /* Even darker blue */
+QPushButton#btnUpdateCreateFileAuto:pressed,
+QPushButton#btnCreateFileAuto:pressed,
+QPushButton#btnConnectAndUpload:pressed {
+   background-color: #0D47A1;
 }
 
-QPushButton#btnUpdateCreateFileAuto:disabled, QPushButton#btnCreateFileAuto:disabled, QPushButton#btnConnectAndUpload:disabled
-{
-   background-color: #90CAF9; /* Lighter blue when disabled */
+QPushButton#btnUpdateCreateFileAuto:disabled,
+QPushButton#btnCreateFileAuto:disabled,
+QPushButton#btnConnectAndUpload:disabled {
+   background-color: #90CAF9;
    color: #E3F2FD;
    border: none;
 }
@@ -342,15 +345,13 @@ QPushButton#btnUpdateCreateFileAuto:disabled, QPushButton#btnCreateFileAuto:disa
 QLineEdit, QComboBox {
     background-color: #FFFFFF;
     border: 1px solid #BDBDBD;
-    padding: 4px 6px; /* Adjusted padding */
+    padding: 4px 6px;
     border-radius: 4px;
-    min-height: 22px; /* Adjusted min height */
-    font-size: 10pt;
+    min-height: 22px;
 }
 
 QLineEdit:focus, QComboBox:focus {
-    border: 1px solid #42A5F5; /* Blue border on focus */
-    /* background-color: #E3F2FD;  Optional: Light blue background on focus */
+    border: 1px solid #42A5F5;
 }
 
 QLineEdit:read-only {
@@ -361,22 +362,13 @@ QLineEdit:read-only {
 QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: top right;
-    width: 20px; /* Slightly wider dropdown button */
+    width: 20px;
     border-left-width: 1px;
     border-left-color: #BDBDBD;
     border-left-style: solid;
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
-    background-color: #F5F5F5; /* Light grey background for dropdown arrow area */
-}
-QComboBox::down-arrow {
-     image: url(:/qt-project.org/styles/commonstyle/images/downarraow-16.png); /* Default arrow - check path if needed */
-     width: 10px;
-     height: 10px;
-}
-QComboBox::down-arrow:on {
-    top: 1px;
-    left: 1px;
+    background-color: #F5F5F5;
 }
 
 QComboBox:hover {
@@ -389,6 +381,7 @@ QComboBox QAbstractItemView {
     selection-background-color: #BBDEFB;
     selection-color: #212121;
     padding: 2px;
+    outline: 0px;
 }
 
 QCheckBox {
@@ -396,6 +389,7 @@ QCheckBox {
     font-size: 10pt;
     background-color: transparent;
 }
+
 QCheckBox::indicator {
     width: 16px;
     height: 16px;
@@ -403,18 +397,19 @@ QCheckBox::indicator {
     border-radius: 3px;
     background-color: #FFFFFF;
 }
+
 QCheckBox::indicator:hover {
      border-color: #42A5F5;
 }
+
 QCheckBox::indicator:checked {
     background-color: #42A5F5;
     border-color: #42A5F5;
-    image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0id2hpdGUiIGNsYXNzPSJiaSBiaS1jaGVjayIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNOCAwYS41LjUgMCAwIDAtLjUuNWwtNi41IDYuNWEuNS41IDAgMCAwIC43MDguNzA4TDggMS43MDcgMTMuNzkzIDcuNSA5IDMuNDM1IDguNjQ2IDMuMDY3YS41LjUgMCAwIDAtLjcwOCAwdjEwLjU4NmEuNS41IDAgMCAwIC41LjVoMmEuNS41IDAgMCAwIC41LS41VjguNzA3bDQuNjQ2IDQuNjQ3YS41LjUgMCAwIDAgLjcwOC0uNzA4bC01LjUtNS41YS41LjUgMCAwIDAtLjcwOCAwTDEuNSAxMS4zNTQgMSAxMC44NTZhLjUuNSAwIDAgMC0uNS41eiIvPgo8L3N2Zz4=); /* Embedded white check SVG */
 }
 
 QCheckBox::indicator:checked:hover {
-    border-color: #1E88E5;
     background-color: #1E88E5;
+    border-color: #1E88E5;
 }
 
 QCheckBox:disabled {
@@ -429,7 +424,6 @@ QCheckBox::indicator:disabled {
 QCheckBox::indicator:checked:disabled {
     background-color: #CFD8DC;
     border-color: #CFD8DC;
-    image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iIzk4QTU4OCIgY2xhc3M9ImJpIGJpLWNoZWNrIiB2aWV3Qm94PSIwIDAgMTYgMTYiPgogIDxwYXRoIGQ9Ik04IDBhLjUuNSAwIDAgMC0uNS41bC02LjUgNi41YS41LjUgMCAwIDAgLjcwOC43MDhMODEuNzA3IDEzLjc5MyA3LjUgOSAzLjQzNSA4LjY0NiAzLjA2N2EuNS41IDAgMCAwLS43MDggMHYxMC41ODZhLjUuNSAwIDAgMCAuNS41aDJhLjUuNSAwIDAgMCAuNS0uNVY4LjcwN2w0LjY0NiA0LjY0N2EuNS41IDAgMCAwIC43MDgtLjcwOGwtNS41LTUuNWEuNS41IDAgMCAwLS43MDggMEwxLjUgMTEuMzU0IDEgMTAuODU2YS41LjUgMCAwIDAtLjUuNXoiLz4KPC9zdmc+); /* Grey check */
 }
 
 QLabel {

@@ -246,7 +246,6 @@ void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
     ui->cmbUpdateRevision->blockSignals(true);
     ui->cmbDeviceModel->blockSignals(true);
 
-    // Обновляем cmbRevision, если нужно и если он не был источником
     if (changedComboBox != ui->cmbRevision && needUpdateRevision) {
         qDebug() << "Sync: Updating cmbRevision programmatically to index" << targetRevisionIndex;
         ui->cmbRevision->blockSignals(false); // <<< РАЗБЛОКИРОВАТЬ ПЕРЕД УСТАНОВКОЙ
@@ -256,19 +255,15 @@ void MainWindow::synchronizeComboBoxes(QObject* senderComboBox) {
         qDebug() << "Sync: Skipping programmatic update for cmbRevision (either sender or index already matches)";
     }
 
-    // Обновляем cmbUpdateRevision, если нужно и если он не был источником
     if (changedComboBox != ui->cmbUpdateRevision && needUpdateUpdateRevision) {
         qDebug() << "Sync: Updating cmbUpdateRevision programmatically to index" << targetUpdateRevisionIndex;
-        // Сигналы уже заблокированы и остаются заблокированными
         ui->cmbUpdateRevision->setCurrentIndex(targetUpdateRevisionIndex);
     } else {
         qDebug() << "Sync: Skipping programmatic update for cmbUpdateRevision (either sender or index already matches)";
     }
 
-    // Обновляем cmbDeviceModel, если нужно и если он не был источником
     if (changedComboBox != ui->cmbDeviceModel && needUpdateDeviceModel) {
         qDebug() << "Sync: Updating cmbDeviceModel programmatically to index" << targetModelIndex;
-            // Сигналы уже заблокированы и остаются заблокированными
         ui->cmbDeviceModel->setCurrentIndex(targetModelIndex);
         if (targetModelIndex == -1 && !selectedModel.isEmpty() && !selectionCleared) {
             qWarning() << "Sync: Model" << selectedModel << "not found in cmbDeviceModel list during update.";
@@ -333,7 +328,7 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() + 10);
         ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() + 10);
         ui->logTextEdit->move(490, 85);
-        ui->logTextEdit->setFixedSize(261, 120);
+        ui->logTextEdit->setFixedSize(261, 121);
 
         // Меню "Обновление прошивки" - позиции из вашего кода
         ui->btnUpdateShowInfo->move(10, 620);
@@ -353,8 +348,8 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->lblTotalFirmwareSize->move(10, 146);
         ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() - 10);
         ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() - 10);
-        ui->logTextEdit->move(365, 80);
-        ui->logTextEdit->setFixedSize(387, 61);
+        ui->logTextEdit->move(460, 80);
+        ui->logTextEdit->setFixedSize(292, 95);
 
         // Меню "Обновление прошивки"
         ui->btnUpdateShowInfo->move(10, 260);
