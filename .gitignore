@@ -77,6 +77,9 @@ CMakeLists.txt.user*
 !/necessaryFoldersAndFiles/ST-LINK/comctl32.dll
 !/necessaryFoldersAndFiles/ST-LINK/STLinkUSBDriver.dll
 !/necessaryFoldersAndFiles/ST-LINK/ST-LINK_CLI.exe
+!/necessaryFoldersAndFiles/openocd/libftdi1.dll
+!/necessaryFoldersAndFiles/openocd/openocd.exe
+!/necessaryFoldersAndFiles/openocd/libusb-1.0.dll
 
 # Directories with generated files
 .moc/

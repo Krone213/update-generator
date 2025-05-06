@@ -59,7 +59,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnCreateFileAuto, &QPushButton::clicked, unit1, &Unit1::onBtnCreateFileAutoClicked);
     connect(ui->btnShowInfo, &QPushButton::clicked, unit1, &Unit1::onBtnShowInfoClicked);
     connect(ui->btnClearRevision, &QPushButton::clicked, unit1, &Unit1::onBtnClearRevisionClicked);
-    connect(ui->btnConnectAndUpload, &QPushButton::clicked, unit1, &Unit1::onBtnConnectAndUploadClicked);
+    connect(ui->btnConnect, &QPushButton::clicked, unit1, &Unit1::onBtnConnectClicked);
+    connect(ui->btnUpload, &QPushButton::clicked, unit1, &Unit1::onBtnUploadClicked);
 
     // Unit2
     connect(ui->btnChooseUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnChooseUpdateProgramDataFileClicked);
@@ -146,22 +147,51 @@ void MainWindow::loadConfigAndPopulate(const QString &filePath)
 
 void MainWindow::appendToLog(const QString &message, bool isError)
 {
-    if (!ui || !ui->logTextEdit) return;
+    if (!ui || !ui->logTextEdit) return; // Всегда хорошая проверка
 
-    QString color = isError ? "red" : "blue";
+    QString colorName; // Будем использовать имена цветов или hex-коды
+
+    if (isError) {
+        // isError теперь должен быть true только для НАСТОЯЩИХ ошибок
+        colorName = "red"; // #FF0000
+    } else {
+        // --- Определяем цвет для НЕ-ошибочных сообщений ---
+        if (message.contains("Verified OK") || message.contains("успешно завершены") || message.contains("Programming Finished") || message.contains("Telnet соединение установлено") || message.contains("Examination succeed")) {
+            colorName = "darkGreen"; // #006400 - Успех или важные позитивные события
+        } else if (message.contains("[Telnet TX]")) {
+            colorName = "purple";    // #800080 - Команды, отправленные по Telnet
+        } else if (message.contains("Warn :")) { // Явно ищем предупреждения
+            colorName = "orange";   // #FFA500 - Предупреждения
+        } else if (message.startsWith("[OOCD ERR] Info :") || message.startsWith("[OOCD] Info :")) {
+            colorName = "gray"; // #808080 - Информационные сообщения OpenOCD можно сделать менее заметными
+        } else {
+            // Все остальное (обычный stdout, Telnet ответы, пользовательские сообщения)
+            colorName = "navy";     // #000080 - Темно-синий для основного лога
+            // или можно использовать цвет по умолчанию:
+            // colorName = ui->logTextEdit->palette().color(QPalette::Text).name();
+        }
+    }
+
     QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
 
+    // Экранирование оставляем, это безопасно для HTML
     QString escapedMessage = message;
-    escapedMessage.replace('&', "&");
+    escapedMessage.replace('&', "&"); // Правильное HTML-экранирование
     escapedMessage.replace('<', "<");
     escapedMessage.replace('>', ">");
 
+    // Формируем HTML строку
     QString htmlMessage = QString("<font color='%1'>[%2] %3</font>")
-                              .arg(color)
+                              .arg(colorName)
                               .arg(timestamp)
                               .arg(escapedMessage);
 
-    ui->logTextEdit->append(htmlMessage); // append добавляет текст и переводит строку
+    // Используем append, он понимает HTML и добавляет новую строку
+    ui->logTextEdit->append(htmlMessage);
+
+    // --- Важно: Обеспечиваем прокрутку вниз ---
+    ui->logTextEdit->moveCursor(QTextCursor::End);
+    ui->logTextEdit->ensureCursorVisible();
 }
 
 void MainWindow::handleRevisionComboBoxChanged(int /*index*/) {

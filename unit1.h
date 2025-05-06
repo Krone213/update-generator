@@ -22,6 +22,9 @@
 #include <QRegularExpression>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QTcpSocket>
+#include <QHostAddress>
+#include <QStandardPaths>
 
 #include <cstring>
 
@@ -66,8 +69,10 @@
         void updateTotalFirmwareSize();
         void createFirmwareFiles(const QString &outputDir);
 
+        bool m_shutdownCommandSent;
+
         // Функция подключения ST-Link
-        QString cliSubfolder = "ST-LINK";
+        /*QString cliSubfolder = "ST-LINK";
         QString cliExecutable = "ST-LINK_CLI.exe";
 
         #ifdef Q_OS_WIN
@@ -84,7 +89,26 @@
         const int m_maxProgramAttempts = 3;
         int m_programAttemptsLeft = 0;
 
-        void executeProgramAttempt();
+        void executeProgramAttempt();*/
+
+        // --- OpenOCD Integration ---
+        QString m_openOcdDir;                 // Base directory for OpenOCD relative to app
+        QString m_openOcdExecutablePath;      // Full path to openocd.exe
+        QString m_openOcdScriptsPath;         // Full path to the scripts directory
+        QString m_interfaceScript = "interface/stlink.cfg"; // Fixed for ST-Link v2
+        // Target script will be selected via UI (cmbTargetMCU)
+        QProcess *m_openOcdProcess = nullptr;
+        QTcpSocket *m_telnetSocket = nullptr;
+        QString m_openOcdHost = "localhost";
+        quint16 m_openOcdTelnetPort = 4444;
+        bool m_isOpenOcdRunning = false;      // Is OpenOCD process supposed to be running?
+        bool m_isConnected = false;           // Is Telnet socket connected?
+        bool m_isConnecting = false;          // Is connection in progress?
+        bool m_isProgramming = false;         // Is programming in progress?
+        QString m_firmwareFilePathForUpload;
+        QString m_originalFirmwarePathForLog;
+        QString m_firmwareAddress = "0x08000000";
+        QByteArray m_receivedTelnetData;
 
 
     public slots:
@@ -92,21 +116,39 @@
         void onBtnChooseLoaderFileClicked();
         void onBtnShowInfoClicked();
         void onBtnClearRevisionClicked();
-        void onBtnConnectAndUploadClicked();
+        //void onBtnConnectAndUploadClicked();
         void hideConnectionStatus();
         void onBtnCreateFileManualClicked();
         void onBtnCreateFileAutoClicked();
-        void onRevisionChanged(int index);
+        void onBtnConnectClicked();
+        void onBtnUploadClicked();
 
     private slots:
-        void handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus);
+
+        // --- OpenOCD Process Handlers ---
+        void handleOpenOcdStarted();
+        void handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus);
+        void handleOpenOcdError(QProcess::ProcessError error);
+        void handleOpenOcdStdOut();
+        void handleOpenOcdStdErr();
+        // --- Telnet Socket Handlers ---
+        void handleTelnetConnected();
+        void handleTelnetDisconnected();
+        void handleTelnetReadyRead();
+        void handleTelnetError(QAbstractSocket::SocketError socketError);
+
+       /* void handleStLinkFinished(int exitCode, QProcess::ExitStatus exitStatus);
         void handleStLinkError(QProcess::ProcessError error);
         void handleStLinkStdOut();
-        void handleStLinkStdErr();
-        void updateLoadingAnimation();
+        void handleStLinkStdErr();*/
 
-        void retryProgramAttempt();
+        void updateLoadingAnimation();
+        void sendOpenOcdCommand(const QString &command);
+        void processTelnetBuffer();
+        void stopOpenOcd();
         void cleanupTemporaryFile();
+        bool checkOpenOcdPrerequisites();
+        void onRevisionChanged(int index);
     };
 
     #endif // UNIT1_H
