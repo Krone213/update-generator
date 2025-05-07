@@ -6,22 +6,27 @@ const char TELNET_CMD_TERMINATOR = '\x1a';
 Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     : QObject(parent), ui(ui)
 {
-
-    // Инициализация таймера
     statusTimer = new QTimer(this);
     statusTimer->setSingleShot(true);
     connect(statusTimer, &QTimer::timeout, this, &Unit1::hideConnectionStatus);
 
-    // --- Determine OpenOCD paths relative to application directory ---
     QString appDir = QCoreApplication::applicationDirPath();
-    m_openOcdDir = QDir(appDir).filePath("openocd"); // Expect 'openocd' folder next to exe
-    m_openOcdExecutablePath = QDir(m_openOcdDir).filePath("bin/openocd.exe");
-    m_openOcdScriptsPath = QDir(m_openOcdDir).filePath("openocd/scripts");
-    m_shutdownCommandSent = false;
+    QString openOcdBaseDirName;
+    QString openOcdExecutableName;
 
-    qDebug() << "Application directory:" << appDir;
-    qDebug() << "Expected OpenOCD executable:" << m_openOcdExecutablePath;
-    qDebug() << "Expected OpenOCD scripts:" << m_openOcdScriptsPath;
+#ifdef Q_OS_WIN
+    openOcdBaseDirName = "openocd_win";
+    openOcdExecutableName = "openocd.exe";
+#else
+    openOcdBaseDirName = "openocd_linux";
+    openOcdExecutableName = "openocd";
+#endif
+
+    m_openOcdDir = QDir(appDir).filePath(openOcdBaseDirName);
+    m_openOcdExecutablePath = QDir(m_openOcdDir).filePath(QDir::toNativeSeparators("bin/" + openOcdExecutableName));
+    m_openOcdScriptsPath = QDir(m_openOcdDir).filePath("openocd/scripts");
+
+    m_shutdownCommandSent = false;
 
     m_openOcdProcess = new QProcess(this);
     connect(m_openOcdProcess, &QProcess::started, this, &Unit1::handleOpenOcdStarted);
@@ -44,16 +49,15 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
 
     ui->lblConnectionStatus->setVisible(false);
     loadConfig("config.xml");
+
     connect(ui->cmbRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &Unit1::onRevisionChanged);
 
     ui->cmbRevision->setCurrentIndex(-1);
     onRevisionChanged(-1);
 
-    connect(ui->btnConnect, &QPushButton::clicked, this, &Unit1::onBtnConnectClicked);
     ui->btnConnect->setEnabled(true);
-    connect(ui->btnUpload, &QPushButton::clicked, this, &Unit1::onBtnUploadClicked);
-    ui->btnUpload->setEnabled(false); // Disabled initially
+    ui->btnUpload->setEnabled(false);
 
     ui->cmbTargetMCU->clear();
     ui->cmbTargetMCU->addItem("STM32L4x Series", "target/stm32l4x.cfg");
@@ -61,7 +65,13 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     ui->cmbTargetMCU->addItem("STM32F4x Series", "target/stm32f4x.cfg");
     ui->cmbTargetMCU->addItem("STM32G4x Series", "target/stm32g4x.cfg");
     ui->cmbTargetMCU->addItem("STM32H7x Series", "target/stm32h7x.cfg");
-    ui->cmbTargetMCU->setCurrentIndex(0); // Select placeholder initially
+    ui->cmbTargetMCU->setCurrentIndex(0);
+
+    // Инициализация флагов состояния
+    m_isOpenOcdRunning = false;
+    m_isConnected = false;
+    m_isConnecting = false;
+    m_isProgramming = false;
 }
 
 Unit1::~Unit1()
@@ -70,181 +80,114 @@ Unit1::~Unit1()
     cleanupTemporaryFile();
 }
 
+// ----------------------- Интеграция OpenOCD
+
 bool Unit1::checkOpenOcdPrerequisites() {
-    // 1. Check if OpenOCD executable exists
     if (!QFile::exists(m_openOcdExecutablePath)) {
-        emit logToInterface("Критическая ошибка: Файл openocd.exe не найден по пути: " + m_openOcdExecutablePath, true);
-        emit logToInterface("Убедитесь, что папка 'openocd' со всеми файлами находится рядом с программой.", true);
-        QMessageBox::critical(nullptr, "Ошибка OpenOCD", "Не найден исполняемый файл OpenOCD.\n" + m_openOcdExecutablePath + "\n\nПоместите папку 'openocd' рядом с программой.");
+        QString expectedParentFolder = QDir(m_openOcdDir).dirName();
+        emit logToInterface("Критическая ошибка: Исполняемый файл OpenOCD не найден по пути: " + m_openOcdExecutablePath, true);
+        emit logToInterface("Убедитесь, что папка '" + expectedParentFolder + "' со всеми необходимыми файлами OpenOCD "
+                                                                              "(включая подпапку 'bin') находится рядом с программой.", true);
         return false;
     }
-    // 2. Check if base scripts directory exists
+
     if (!QDir(m_openOcdScriptsPath).exists()) {
         emit logToInterface("Критическая ошибка: Папка со скриптами OpenOCD не найдена: " + m_openOcdScriptsPath, true);
-        QMessageBox::critical(nullptr, "Ошибка OpenOCD", "Не найдена папка со скриптами OpenOCD.\n" + m_openOcdScriptsPath);
+        emit logToInterface("Ожидаемая структура: папка_программы/" + QDir(m_openOcdDir).dirName() + "/scripts/", true);
         return false;
     }
-    // 3. Check if interface script exists
+
     QString fullInterfaceScriptPath = QDir(m_openOcdScriptsPath).filePath(m_interfaceScript);
     if (!QFile::exists(fullInterfaceScriptPath)) {
         emit logToInterface("Критическая ошибка: Файл скрипта интерфейса не найден: " + fullInterfaceScriptPath, true);
-        QMessageBox::critical(nullptr, "Ошибка OpenOCD", "Не найден файл скрипта интерфейса ST-Link:\n" + fullInterfaceScriptPath);
         return false;
     }
-
-    // 4. Check if a target MCU is selected in the ComboBox
-    if (!ui->cmbTargetMCU || ui->cmbTargetMCU->currentIndex() <= 0) { // Index 0 is placeholder
+    if (!ui->cmbTargetMCU || ui->cmbTargetMCU->currentIndex() < 0) {
         emit logToInterface("Ошибка: Не выбран целевой микроконтроллер (MCU).", true);
-        QMessageBox::warning(nullptr, "Требуется выбор MCU", "Пожалуйста, выберите тип целевого STM32 из списка.");
         return false;
     }
 
-    // 5. Check if the selected target script exists
     QString targetScript = ui->cmbTargetMCU->currentData().toString();
+    if (targetScript.isEmpty()) {
+        emit logToInterface("Ошибка: Данные для выбранного MCU не определены (путь к скрипту пуст).", true);
+        return false;
+    }
+
     QString fullTargetScriptPath = QDir(m_openOcdScriptsPath).filePath(targetScript);
     if (!QFile::exists(fullTargetScriptPath)) {
         emit logToInterface("Критическая ошибка: Выбранный файл скрипта цели не найден: " + fullTargetScriptPath, true);
-        QMessageBox::critical(nullptr, "Ошибка OpenOCD", "Не найден файл скрипта для выбранного MCU:\n" + fullTargetScriptPath);
         return false;
     }
 
-
-    return true; // All checks passed
+    return true;
 }
 
 void Unit1::onBtnConnectClicked() {
-    if (m_isOpenOcdRunning || m_isConnecting) {
-        emit logToInterface("OpenOCD уже запущен или идет подключение.", true);
+    if (m_isConnected) {
+        ui->btnConnect->setEnabled(false);
+        emit logToInterface("Нажата кнопка 'Отключить'. Остановка OpenOCD...", false);
+        stopOpenOcd();
         return;
     }
 
-    // --- Check prerequisites before starting ---
-    if (!checkOpenOcdPrerequisites()) {
-        return; // Stop if checks fail
+    if (m_isOpenOcdRunning || m_isConnecting) {
+        emit logToInterface("Процесс OpenOCD или подключения уже активен. Пожалуйста, подождите или остановите его (если он завис).", true);
+        return;
     }
 
-    // --- Get selected target script ---
+    if (!checkOpenOcdPrerequisites()) {
+        return;
+    }
+
+    emit logToInterface("Нажата кнопка 'Подключить'. Запуск OpenOCD...", false);
+
     QString targetScript = ui->cmbTargetMCU->currentData().toString();
 
-
-    // --- Clear previous state/logs ---
     ui->logTextEdit->clear();
-    m_isOpenOcdRunning = true; // Mark that we INTEND to run OpenOCD
     m_isConnected = false;
     m_isConnecting = true;
     m_isProgramming = false;
     m_receivedTelnetData.clear();
-    emit logToInterface("--- Запуск OpenOCD и попытка подключения ---", false);
 
-    // --- Update UI ---
+    emit logToInterface("!! Запуск OpenOCD и попытка подключения к " + targetScript, false);
+
+    // Обновление UI для состояния "Подключение"
     ui->lblConnectionStatus->setText("<font color='blue'><b>...</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     m_animationFrame = -1;
+    if (!m_animationTimer->isActive()) m_animationTimer->start();
     updateLoadingAnimation();
-    m_animationTimer->start();
     statusTimer->stop();
-    if(ui->btnConnect) ui->btnConnect->setEnabled(false); // Disable connect while connecting/connected
-    if(ui->btnUpload) ui->btnUpload->setEnabled(false);
-    if(ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(false); // Disable target change while connected
+    ui->btnConnect->setEnabled(false);
+    ui->btnUpload->setEnabled(false);
+    ui->cmbTargetMCU->setEnabled(false);
 
-
-    // --- Prepare OpenOCD arguments ---
     QStringList arguments;
-    // --- Specify search path for scripts first! ---
     arguments << "-s" << QDir::toNativeSeparators(m_openOcdScriptsPath);
-    // --- Add interface and target scripts ---
     arguments << "-f" << m_interfaceScript;
     arguments << "-f" << targetScript;
+    arguments << "-c" << "adapter speed 4000";
 
-    emit logToInterface("Запуск: " + m_openOcdExecutablePath + " " + arguments.join(" "), false);
+    emit logToInterface("Команда запуска: " + m_openOcdExecutablePath + " " + arguments.join(" "), false);
 
-    // --- Start OpenOCD process ---
-    m_openOcdProcess->setWorkingDirectory(m_openOcdDir); // Set working directory to openocd folder
+    m_openOcdProcess->setWorkingDirectory(m_openOcdDir);
     m_openOcdProcess->start(m_openOcdExecutablePath, arguments);
-}
-
-void Unit1::stopOpenOcd() {
-    qDebug() << ">>> stopOpenOcd CALLED. Current state: m_isOpenOcdRunning=" << m_isOpenOcdRunning
-             << " Process state:" << (m_openOcdProcess ? m_openOcdProcess->state() : QProcess::NotRunning)
-             << " Socket state:" << (m_telnetSocket ? m_telnetSocket->state() : QAbstractSocket::UnconnectedState); // DEBUG
-
-    // Если уже не запущен или процесс уже завершен, просто выходим
-    if (!m_isOpenOcdRunning && (!m_openOcdProcess || m_openOcdProcess->state() == QProcess::NotRunning)) {
-        qDebug() << ">>> stopOpenOcd: Nothing to stop or already stopped."; // DEBUG
-        // Убедимся, что UI сброшен на всякий случай
-        m_animationTimer->stop();
-        ui->lblConnectionStatus->setVisible(false);
-        if(ui->btnConnect) ui->btnConnect->setEnabled(true);
-        if(ui->btnUpload) ui->btnUpload->setEnabled(false);
-        if(ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(true);
-        return;
-    }
-
-    // Логируем начало остановки только если действительно есть что останавливать
-    if (m_isOpenOcdRunning || (m_openOcdProcess && m_openOcdProcess->state() != QProcess::NotRunning)) {
-        emit logToInterface("--- Остановка OpenOCD ---", false);
-    }
-
-    // Сбрасываем флаги намерения и состояния
-    m_isOpenOcdRunning = false;
-    m_isConnected = false;
-    m_isConnecting = false;
-    m_isProgramming = false;
-
-    // --- Сначала закрываем сокет (если еще не закрыт) ---
-    // Это важно, чтобы он не пытался переподключиться или что-то еще
-    if (m_telnetSocket && m_telnetSocket->state() != QAbstractSocket::UnconnectedState) {
-        qDebug() << ">>> stopOpenOcd: Aborting Telnet socket."; // DEBUG
-        m_telnetSocket->abort(); // Жестко разрываем соединение
-    }
-
-    // --- Затем останавливаем процесс ---
-    if (m_openOcdProcess && m_openOcdProcess->state() != QProcess::NotRunning) {
-        qDebug() << ">>> stopOpenOcd: Attempting to terminate OpenOCD process..."; // DEBUG
-        m_openOcdProcess->terminate(); // Просим завершиться
-        // Даем немного времени на завершение
-        if (!m_openOcdProcess->waitForFinished(1000)) { // Ждем 1 секунду
-            qDebug() << ">>> stopOpenOcd: Terminate failed or timed out. Killing process..."; // DEBUG
-            emit logToInterface("Принудительное завершение OpenOCD...", true);
-            m_openOcdProcess->kill(); // Убиваем, если не завершился сам
-            m_openOcdProcess->waitForFinished(500); // Короткое ожидание после kill
-        } else {
-            qDebug() << ">>> stopOpenOcd: Terminate succeeded."; // DEBUG
-        }
-        qDebug() << ">>> stopOpenOcd: Final process state after stop attempt:" << m_openOcdProcess->state(); // DEBUG
-    } else {
-        qDebug() << ">>> stopOpenOcd: OpenOCD process was not running or pointer invalid."; // DEBUG
-    }
-
-    // --- Окончательно обновляем UI ---
-    qDebug() << ">>> stopOpenOcd: Finalizing UI state."; // DEBUG
-    m_animationTimer->stop(); // Останавливаем анимацию
-    ui->lblConnectionStatus->setVisible(false); // Скрываем статус
-    if(ui->btnConnect) ui->btnConnect->setEnabled(true); // Разрешаем новое подключение
-    if(ui->btnUpload) ui->btnUpload->setEnabled(false); // Запрещаем загрузку (нужно сначала подключиться)
-    if(ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(true); // Разрешаем выбор MCU
-
-    // Очищаем временный файл в самом конце
-    cleanupTemporaryFile();
 }
 
 void Unit1::onBtnUploadClicked() {
     if (!m_isConnected) {
         emit logToInterface("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
-        QMessageBox::warning(nullptr, "Нет подключения", "Необходимо сначала подключиться к устройству.");
         return;
     }
     if (m_isProgramming) {
         emit logToInterface("Программирование уже выполняется.", true);
         return;
     }
-
-    // --- Select Firmware File ---
     QString originalFirmwarePath;
-    QString defaultDir = QDir::currentPath() + "/Файл Прошивки CPU1/"; // Or use QStandardPaths
+    QString defaultDir = QDir::currentPath() + "/Файл Прошивки CPU1/";
     QDir testDir(defaultDir);
     if (!testDir.exists()) {
-        defaultDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation); // Safer default
+        defaultDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
         if (defaultDir.isEmpty()) defaultDir = QDir::currentPath();
     }
     originalFirmwarePath = QFileDialog::getOpenFileName(
@@ -261,11 +204,10 @@ void Unit1::onBtnUploadClicked() {
     m_originalFirmwarePathForLog = originalFirmwarePath;
     emit logToInterface("Выбран файл: " + originalFirmwarePath, false);
 
-    // --- Copy to Temporary Location ---
     QString appDir = QCoreApplication::applicationDirPath();
     QString tempSubDir = "temp_firmware";
     QDir tempDir(appDir);
-    if (!tempDir.exists(tempSubDir)) { if (!tempDir.mkdir(tempSubDir)) { /*...*/ return; } } // Simplified
+    if (!tempDir.exists(tempSubDir)) { if (!tempDir.mkdir(tempSubDir)) { /*...*/ return; } }
 
     QFileInfo originalFileInfo(originalFirmwarePath);
     QString suffix = originalFileInfo.suffix().isEmpty() ? "tmp" : originalFileInfo.suffix();
@@ -278,7 +220,6 @@ void Unit1::onBtnUploadClicked() {
     if (!QFile::copy(originalFirmwarePath, temporaryFirmwarePath)) {
         emit logToInterface("Критическая ошибка: Не удалось скопировать файл прошивки из " + originalFirmwarePath + " в " +
                                 temporaryFirmwarePath + ". Ошибка: " + QFile(originalFirmwarePath).errorString(), true);
-        QMessageBox::warning(nullptr, "Ошибка копирования", "Абывгда");
         return;
     }
 
@@ -290,28 +231,20 @@ void Unit1::onBtnUploadClicked() {
 
     m_shutdownCommandSent = false;
 
-    // --- Start Programming Sequence ---
     m_isProgramming = true;
-    emit logToInterface("--- Начало программирования (файл: " + originalFileInfo.fileName() + ") ---", false);
+    emit logToInterface("!! Начало программирования (файл: " + originalFileInfo.fileName() + ")", false);
 
-    // --- Update UI ---
     ui->lblConnectionStatus->setText("<font color='blue'><b>...</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     m_animationFrame = -1;
     updateLoadingAnimation();
     m_animationTimer->start();
     statusTimer->stop();
-    // Keep Connect disabled
-    if(ui->btnUpload) ui->btnUpload->setEnabled(false); // Disable upload during programming
-    // Keep Target disabled
+    if(ui->btnUpload) ui->btnUpload->setEnabled(false);
 
-
-    // --- Send OpenOCD Commands ---
     m_receivedTelnetData.clear();
     sendOpenOcdCommand("reset halt");
-    // --- Wait a bit for halt to complete before sending program ---
-    // --- A better way is to parse the ">" prompt after halt ---
-    QTimer::singleShot(200, this, [this, firmwarePathForOcd]() { // Захватываем исправленный путь
+    QTimer::singleShot(200, this, [this, firmwarePathForOcd]() {
         if (m_isProgramming) {
             // Используем firmwarePathForOcd вместо m_firmwareFilePathForUpload
             QString programCmd = QString("program \"%1\" %2 verify reset").arg(firmwarePathForOcd).arg(m_firmwareAddress);
@@ -320,11 +253,74 @@ void Unit1::onBtnUploadClicked() {
     });
 }
 
+void Unit1::stopOpenOcd() {
+    bool wasActive = m_isOpenOcdRunning || m_isConnecting || m_isProgramming || m_isConnected;
+
+    m_isOpenOcdRunning = false;
+    m_isConnected = false;
+    m_isConnecting = false;
+    m_isProgramming = false;
+    m_shutdownCommandSent = false;
+
+    if (m_telnetSocket && m_telnetSocket->state() != QAbstractSocket::UnconnectedState) {
+        m_telnetSocket->abort();
+    }
+
+    if (m_openOcdProcess && m_openOcdProcess->state() != QProcess::NotRunning) {
+        m_openOcdProcess->blockSignals(true);
+        m_openOcdProcess->terminate();
+        if (!m_openOcdProcess->waitForFinished(1000)) {
+            emit logToInterface("Принудительное завершение OpenOCD...", true);
+            m_openOcdProcess->kill();
+            m_openOcdProcess->waitForFinished(500);
+        }
+        m_openOcdProcess->blockSignals(false);
+    }
+
+    m_animationTimer->stop();
+    ui->btnConnect->setText("Подключить");
+    ui->btnConnect->setEnabled(true);
+    ui->btnUpload->setEnabled(false);
+    ui->cmbTargetMCU->setEnabled(true);
+
+    cleanupTemporaryFile();
+
+    if (wasActive) {
+        emit logToInterface("!! OpenOCD и все связанные операции остановлены.", false);
+    }
+}
+
+void Unit1::sendOpenOcdCommand(const QString &command) {
+    if (!m_isConnected || !m_telnetSocket || m_telnetSocket->state() != QAbstractSocket::ConnectedState) {
+        emit logToInterface("Ошибка: Невозможно отправить команду '" + command + "', нет Telnet соединения.", true);
+        if(m_isProgramming && (command.startsWith("program") || command == "shutdown")) {
+            m_isProgramming = false;
+            m_animationTimer->stop();
+            ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
+            if(ui->btnUpload) ui->btnUpload->setEnabled(m_isConnected);
+            statusTimer->start(3000);
+            cleanupTemporaryFile();
+            QTimer::singleShot(100, this, &Unit1::stopOpenOcd);
+        }
+        return;
+    }
+
+    emit logToInterface("[Telnet TX] " + command, false);
+
+    QByteArray commandData = command.toUtf8() + "\n";
+
+    m_telnetSocket->write(commandData);
+    m_telnetSocket->flush();
+}
+
 void Unit1::handleOpenOcdStarted() {
+    m_isOpenOcdRunning = true;
     emit logToInterface("Процесс OpenOCD запущен.", false);
-    QTimer::singleShot(750, this, [this](){ // Increased delay slightly
+
+    QTimer::singleShot(750, this, [this](){
         if (m_isConnecting && m_telnetSocket->state() == QAbstractSocket::UnconnectedState) {
             emit logToInterface(QString("Подключение к Telnet %1:%2...").arg(m_openOcdHost).arg(m_openOcdTelnetPort), false);
+            ui->lblConnectionStatus->setText("<font color='blue'><b>...</b></font>");
             m_telnetSocket->connectToHost(m_openOcdHost, m_openOcdTelnetPort);
         }
     });
@@ -337,55 +333,39 @@ void Unit1::handleTelnetReadyRead() {
 
 void Unit1::handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus) {
     QString statusMsg = (exitStatus == QProcess::NormalExit) ? "нормально" : "с ошибкой";
+    bool isUnexpectedError = (exitCode != 0 || exitStatus != QProcess::NormalExit);
+
     emit logToInterface(QString("Процесс OpenOCD завершен (Код: %1, Статус: %2).")
-                            .arg(exitCode).arg(statusMsg), exitCode != 0 && m_isOpenOcdRunning); // Log as error only if unexpected
-    qDebug() << "OpenOCD process finished. ExitCode:" << exitCode << "ExitStatus:" << static_cast<int>(exitStatus);
+                            .arg(exitCode).arg(statusMsg), isUnexpectedError && !m_shutdownCommandSent);
 
-    // --- If OpenOCD stops unexpectedly while we thought it should be running ---
-    if (m_isOpenOcdRunning) {
-        m_isOpenOcdRunning = false; // It's not running anymore
-        m_isConnected = false;
-        m_isConnecting = false;
-        m_isProgramming = false;
+    bool wasConsideredActive = m_isOpenOcdRunning || m_isConnecting;
+    m_isOpenOcdRunning = false;
+    m_isConnecting = false;
+
+    if (m_shutdownCommandSent) {
+        emit logToInterface("OpenOCD корректно завершил работу после команды shutdown.", false);
         m_animationTimer->stop();
-
-        if (m_telnetSocket->state() != QAbstractSocket::UnconnectedState) {
-            m_telnetSocket->abort();
-        }
-
-        emit logToInterface("Соединение с OpenOCD неожиданно разорвано.", true);
-        ui->lblConnectionStatus->setText("<font color='red'><b>✗ OOCD</b></font>");
+        ui->btnConnect->setText("Подключить");
+        ui->btnConnect->setEnabled(true);
+        ui->btnUpload->setEnabled(false);
+        ui->cmbTargetMCU->setEnabled(true);
+        cleanupTemporaryFile();
+        m_shutdownCommandSent = false;
+    } else if (wasConsideredActive) {
+        emit logToInterface("OpenOCD неожиданно завершился или не смог остаться запущенным.", true);
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
-
-        // --- Reset UI ---
-        if(ui->btnConnect) ui->btnConnect->setEnabled(true);
-        if(ui->btnUpload) ui->btnUpload->setEnabled(false);
-        if(ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(true);
+        stopOpenOcd();
     }
 }
 
 void Unit1::handleOpenOcdError(QProcess::ProcessError error) {
-    emit logToInterface("Ошибка запуска/работы процесса OpenOCD: " + m_openOcdProcess->errorString(), true);
-    qDebug() << "OpenOCD QProcess Error:" << static_cast<int>(error) << m_openOcdProcess->errorString();
-
-    // --- Reset state fully on process error ---
-    m_isOpenOcdRunning = false;
-    m_isConnected = false;
-    m_isConnecting = false;
-    m_isProgramming = false;
-    m_animationTimer->stop();
-
-    ui->lblConnectionStatus->setText("<font color='red'><b>✗ Процесс</b></font>");
+    emit logToInterface("Критическая ошибка процесса OpenOCD: " + m_openOcdProcess->errorString() + QString(" (Код: %1)").arg(error), true);
+    ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     statusTimer->start(3000);
-
-    // --- Reset UI ---
-    if(ui->btnConnect) ui->btnConnect->setEnabled(true);
-    if(ui->btnUpload) ui->btnUpload->setEnabled(false);
-    if(ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(true);
-
-    cleanupTemporaryFile();
+    stopOpenOcd();
 }
 
 void Unit1::handleOpenOcdStdOut() {
@@ -393,7 +373,6 @@ void Unit1::handleOpenOcdStdOut() {
     QString message = QString::fromLocal8Bit(data).trimmed();
     if (!message.isEmpty()) {
         emit logToInterface("[OOCD] " + message, false);
-        qDebug() << "[OOCD stdout]" << message;
     }
 }
 
@@ -401,221 +380,134 @@ void Unit1::handleOpenOcdStdErr() {
     QByteArray data = m_openOcdProcess->readAllStandardError();
     QString message = QString::fromLocal8Bit(data).trimmed();
     if (!message.isEmpty()) {
-        // --- Умное определение ошибки ---
-        bool isError = false; // По умолчанию - не ошибка
+        bool isError = false;
         if (message.startsWith("Error:")) {
             isError = true;
         } else if (message.startsWith("Warn :")) {
-            // Предупреждения можно тоже красить красным или другим цветом
-            // Пока оставим как НЕ ошибку для простоты, но можно и isError = true;
-            isError = false; // Или isError = true, если хотите их видеть красными
+            isError = false;
         } else if (message.contains("failed") || message.contains("Can't find") || message.contains("couldn't open")) {
-            // Некоторые строки без Error: тоже могут быть ошибками
             isError = true;
         }
-        // Дополнительно: Можно игнорировать частое сообщение про скорость
         if (message.contains("Unable to match requested speed")) {
-            isError = false; // Это не критическая ошибка
+            isError = false;
         }
-
-        // Отправляем лог с правильным флагом isError
         emit logToInterface("[OOCD ERR] " + message, isError);
-        qDebug() << "[OOCD stderr]" << message;
-
     }
 }
 
 void Unit1::handleTelnetConnected() {
     emit logToInterface("Telnet соединение установлено.", false);
+
     m_isConnected = true;
     m_isConnecting = false;
-    m_animationTimer->stop();
 
-    // --- Update UI ---
+    m_animationTimer->stop();
     ui->lblConnectionStatus->setText("<font color='green'><b>✓</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     statusTimer->start(2000);
-    // Connect button remains disabled
-    if(ui->btnUpload) ui->btnUpload->setEnabled(true); // Enable upload now
-    // Target MCU combo remains disabled
+    ui->btnConnect->setText("Отключить");
+    ui->btnConnect->setEnabled(true);
+    ui->btnUpload->setEnabled(true);
 }
 
 void Unit1::handleTelnetDisconnected() {
-    qDebug() << ">>> handleTelnetDisconnected CALLED. m_isOpenOcdRunning=" << m_isOpenOcdRunning << "m_isConnecting=" << m_isConnecting; // DEBUG
-    // --- Only log as error if the disconnection was unexpected ---
-    if (m_isOpenOcdRunning) { // Эта проверка важна, чтобы не реагировать на штатный вызов stopOpenOcd()
-        qDebug() << ">>> Telnet disconnected while OpenOCD was supposed to be running (likely after shutdown cmd or error)."; // DEBUG
-        emit logToInterface("Telnet соединение разорвано (ожидаемо после shutdown или из-за ошибки).", true); // Изменим текст лога
-
-        // Сбрасываем флаги состояния СРАЗУ
+    if (m_shutdownCommandSent) {
+        emit logToInterface("Telnet соединение закрыто OpenOCD.", false);
         m_isConnected = false;
-        m_isConnecting = false; // На всякий случай
-        m_isProgramming = false; // На всякий случай
-        m_animationTimer->stop(); // Останавливаем любую анимацию
-
-        // Обновляем UI, показывая состояние "не подключено"
-        ui->lblConnectionStatus->setText("<font color='orange'><b>! Disconnected</b></font>"); // Оранжевый - разорвано
+    }
+    if (m_isConnected) {
+        emit logToInterface("Telnet соединение с OpenOCD неожиданно разорвано.", true);
+        ui->lblConnectionStatus->setText("<font color='orange'><b>?</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
-
-        // --- Вызываем stopOpenOcd для завершения процесса и финализации UI ---
-        qDebug() << ">>> Calling stopOpenOcd() from handleTelnetDisconnected."; // DEBUG
-        stopOpenOcd(); // Вызываем в любом случае, если соединение разорвано при m_isOpenOcdRunning=true
-
-    } else {
-        qDebug() << ">>> Telnet socket disconnected normally (m_isOpenOcdRunning is false)."; // DEBUG
-        // Если !m_isOpenOcdRunning, значит stopOpenOcd() уже был вызван ранее и инициировал отключение.
-        // Ничего больше делать не нужно.
+        stopOpenOcd();
+    } else if (m_isConnecting) {
+        emit logToInterface("Telnet отключился во время попытки соединения.", true);
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
+        ui->lblConnectionStatus->setVisible(true);
+        statusTimer->start(3000);
+        stopOpenOcd();
     }
-    // cleanupTemporaryFile() вызывается внутри stopOpenOcd, не дублируем
 }
 
 void Unit1::handleTelnetError(QAbstractSocket::SocketError socketError) {
-    emit logToInterface("Ошибка Telnet сокета: " + m_telnetSocket->errorString(), true);
-    qDebug() << "Telnet Socket Error:" << static_cast<int>(socketError) << m_telnetSocket->errorString();
+    if (m_shutdownCommandSent && socketError == QAbstractSocket::RemoteHostClosedError) {
+        emit logToInterface("Telnet соединение закрыто OpenOCD после команды shutdown.", false);
+        return;
+    }
 
-    m_animationTimer->stop();
-    m_isConnected = false;
-    m_isProgramming = false;
-
+    emit logToInterface("Ошибка Telnet сокета: " + m_telnetSocket->errorString() + QString(" (Код: %1)").arg(socketError), true);
     if (m_isConnecting) {
-        m_isConnecting = false;
         emit logToInterface("Не удалось подключиться к Telnet OpenOCD.", true);
-        ui->lblConnectionStatus->setText("<font color='red'><b>✗ Telnet</b></font>");
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
-        stopOpenOcd(); // Stop the process if Telnet connection fails
-    } else if (m_isOpenOcdRunning) { // Error while connected
-        ui->lblConnectionStatus->setText("<font color='red'><b>✗ Telnet Err</b></font>");
+        stopOpenOcd();
+    } else if (m_isConnected) {
+        emit logToInterface("Соединение Telnet с OpenOCD разорвано с ошибкой.", true);
+        ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
-        stopOpenOcd(); // Stop the process on Telnet error
+        stopOpenOcd();
     }
-
-    // UI is reset by stopOpenOcd()
-    cleanupTemporaryFile();
+    m_isConnected = false;
+    m_isConnecting = false;
 }
 
-void Unit1::sendOpenOcdCommand(const QString &command) {
-    // Проверяем, есть ли активное Telnet-соединение
-    if (!m_isConnected || !m_telnetSocket || m_telnetSocket->state() != QAbstractSocket::ConnectedState) {
-        // Если нет соединения, логируем ошибку и ничего не отправляем
-        qDebug() << "--- Cannot send command, Telnet not connected.";
-        emit logToInterface("Ошибка: Невозможно отправить команду '" + command + "', нет Telnet соединения.", true);
-
-        // Если мы пытались отправить команду во время программирования и не смогли,
-        // то нужно сбросить состояние программирования, чтобы не зависнуть
-        if(m_isProgramming && (command.startsWith("program") || command == "shutdown")) {
-            m_isProgramming = false; // Сбрасываем флаг
-            m_animationTimer->stop(); // Останавливаем анимацию
-            ui->lblConnectionStatus->setText("<font color='red'><b>✗ Telnet</b></font>"); // Показываем ошибку
-            if(ui->btnUpload) ui->btnUpload->setEnabled(m_isConnected); // Кнопка Upload зависит от m_isConnected
-            statusTimer->start(3000); // Показать статус на время
-            cleanupTemporaryFile(); // Очистить временный файл, если он был
-            // Возможно, стоит также остановить OpenOCD, раз Telnet потерян
-            // QTimer::singleShot(100, this, &Unit1::stopOpenOcd);
-        }
-        return; // Выходим из метода
-    }
-
-    // Если соединение есть, логируем отправляемую команду (синим цветом)
-    emit logToInterface("[Telnet TX] " + command, false);
-    qDebug() << "[Telnet TX]" << command;
-
-    // Преобразуем команду в QByteArray (UTF-8) и добавляем символ новой строки (\n),
-    // который OpenOCD ожидает в конце Telnet-команды
-    QByteArray commandData = command.toUtf8() + "\n";
-
-    qDebug() << "--- Writing command to Telnet:" << commandData.trimmed(); // DEBUG
-    m_telnetSocket->write(commandData);
-    m_telnetSocket->flush();
-}
-
-// --- processTelnetBuffer: Needs careful parsing ---
 void Unit1::processTelnetBuffer() {
-    // 1. Добавляем новые данные в буфер
     m_receivedTelnetData.append(m_telnetSocket->readAll());
-    QString fullBuffer = QString::fromUtf8(m_receivedTelnetData); // Работаем с полной копией
+    QString fullBuffer = QString::fromUtf8(m_receivedTelnetData);
 
-    qDebug() << "--- processTelnetBuffer ENTRY --- Buffer size:" << fullBuffer.length(); // DEBUG
-
-    // 2. ПРИОРИТЕТ: Проверяем исход программирования, если оно идет и shutdown еще не отправлен
     if (m_isProgramming && !m_shutdownCommandSent) {
-        qDebug() << "--- Checking for programming outcome (isProgramming=true, shutdownSent=false)"; // DEBUG
         bool outcomeDetected = false;
-
-        // Ищем ключевые фразы в ВЕСЬ накопленный буфер
         bool verifyOk = fullBuffer.contains("Verified OK") || fullBuffer.contains("verification succeded");
         bool programFailed = fullBuffer.contains("** Programming Failed **") || fullBuffer.contains("Error: couldn't open");
 
         if (programFailed) {
-            qDebug() << "!!! Programming FAILED detected in buffer."; // DEBUG
             emit logToInterface("Ошибка программирования/верификации!", true);
-            ui->lblConnectionStatus->setText("<font color='red'><b>✗ Прог</b></font>");
+            ui->lblConnectionStatus->setText("<font color='red'><b>✗</b></font>");
             outcomeDetected = true;
         } else if (verifyOk) {
-            qDebug() << "!!! Programming SUCCESS (Verified OK) detected in buffer."; // DEBUG
             emit logToInterface("Программирование и верификация успешно завершены!", false);
-            ui->lblConnectionStatus->setText("<font color='green'><b>✓ Прог</b></font>");
+            ui->lblConnectionStatus->setText("<font color='green'><b>✓</b></font>");
             outcomeDetected = true;
         }
 
-        // Если исход определен (успех или провал)
         if (outcomeDetected) {
-            m_isProgramming = false;      // Больше не программируем
-            m_animationTimer->stop();     // Останавливаем анимацию
-            statusTimer->start(5000);     // Показываем финальный статус
+            m_isProgramming = false;
+            m_animationTimer->stop();
+            statusTimer->start(5000);
 
-            qDebug() << "!!! Outcome detected. Attempting to send shutdown command."; // DEBUG
             emit logToInterface("Отправка команды shutdown в OpenOCD...", false);
-            sendOpenOcdCommand("shutdown"); // Отправляем команду завершения
-            m_shutdownCommandSent = true; // Устанавливаем флаг, чтобы не отправлять снова
-            // НЕ ОЧИЩАЕМ БУФЕР ЗДЕСЬ. Пусть disconnect обработает остальное.
+            sendOpenOcdCommand("shutdown");
+            m_shutdownCommandSent = true;
         }
     }
 
-    // 3. Обрабатываем буфер для ЛОГИРОВАНИЯ строк до промпта '>'
-    // Этот блок теперь отвечает только за вывод строк в лог, а не за определение исхода прошивки.
     int promptPos;
-    // Используем локальную копию буфера для разбора логов,
-    // а m_receivedTelnetData оставляем для накопления на случай разрыва строк.
-    QString bufferForLogging = fullBuffer;
+    QString bufferForLogging = QString::fromStdString(m_receivedTelnetData.toStdString());
 
     while ((promptPos = bufferForLogging.indexOf("\n> ")) != -1) {
-        QString message = bufferForLogging.left(promptPos).trimmed(); // Сообщение до промпта
-        QString blockToRemove = bufferForLogging.left(promptPos + 3); // Блок с промптом
+        QString message = bufferForLogging.left(promptPos).trimmed();
+        QString blockToRemove = bufferForLogging.left(promptPos + 3);
 
         if (!message.isEmpty()) {
-            // --- Раскраска логов (как в функции appendToLog, но можно упростить) ---
             bool isError = message.startsWith("Error:") || message.contains("failed") || message.contains("timed out");
             bool isWarning = message.startsWith("Warn :");
-            // Отправляем в UI для раскраски
-            emit logToInterface("[Telnet] " + message, isError || isWarning); // Пока красим Warn как Error
-            qDebug() << "[Telnet Parsed Line]" << message;
+            emit logToInterface("[Telnet] " + message, isError || isWarning);
         }
 
-        // Удаляем обработанный блок из оригинального накопленного буфера
-        // Чтобы избежать повторного логирования и корректно сохранить остаток
         m_receivedTelnetData.remove(0, blockToRemove.length());
-        // Обновляем локальную копию для следующей итерации цикла
-        bufferForLogging = QString::fromUtf8(m_receivedTelnetData);
-
-        qDebug() << "--- Logged block, remaining buffer size:" << m_receivedTelnetData.length(); // DEBUG
+        bufferForLogging = QString::fromStdString(m_receivedTelnetData.toStdString());
     }
-    // Оставшаяся часть буфера (без промпта) сохраняется в m_receivedTelnetData для следующего вызова
-    qDebug() << "--- processTelnetBuffer EXIT --- Remaining buffer size:" << m_receivedTelnetData.length(); // DEBUG
 }
 
 void Unit1::cleanupTemporaryFile() {
     if (!m_firmwareFilePathForUpload.isEmpty() && m_firmwareFilePathForUpload.contains("temp_firmware")) {
-        qDebug() << "Удаление временного файла:" << m_firmwareFilePathForUpload;
         QFile tempFile(m_firmwareFilePathForUpload);
         if (tempFile.exists()) {
             if (!tempFile.remove()) {
-                qWarning() << "Не удалось удалить временный файл:" << m_firmwareFilePathForUpload << tempFile.errorString();
                 emit logToInterface("Предупреждение: Не удалось удалить временный файл: " + m_firmwareFilePathForUpload, true);
-            } else {
-                qDebug() << "Временный файл удален:" << m_firmwareFilePathForUpload;
             }
         }
 
@@ -631,8 +523,6 @@ void Unit1::cleanupTemporaryFile() {
                 } else {
                     qWarning() << "Не удалось удалить временную папку (возможно, не пуста):" << tempDir.path();
                 }
-            } else {
-                qDebug() << "Временная папка не пуста, не удаляется:" << tempDir.path();
             }
         }
         m_firmwareFilePathForUpload.clear();
@@ -661,6 +551,8 @@ void Unit1::updateLoadingAnimation() {
 
     ui->lblConnectionStatus->setText(text);
 }
+
+// ----------------------- Unit1 Перенесённый
 
 void Unit1::onBtnShowInfoClicked()
 {
@@ -1126,7 +1018,6 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
             intermediateCRCBytesLE[2] = (intermediateCRC >> 16) & 0xFF;
             intermediateCRCBytesLE[3] = (intermediateCRC >> 24) & 0xFF;
 
-            // --- ТОТ САМЫЙ ЦИКЛ РЕВЕРСА ---
             // В оригинале цикл шел по байтам intermediateCRC, записанным в конец буфера.
             // Эмулируем это, используя массив байт intermediateCRCBytesLE
             for (int k = 3; k >= 0; --k) { // Цикл по 4 байтам CRC

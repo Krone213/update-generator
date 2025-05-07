@@ -35,7 +35,7 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    void updateUpdateProgramDataFileSize(const QString &filePath); // Specific to Unit2's label
+    void updateUpdateProgramDataFileSize(const QString &filePath);
 
 
 public slots:

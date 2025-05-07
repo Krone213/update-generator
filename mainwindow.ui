@@ -342,7 +342,7 @@ QPushButton#btnUpload:disabled {
    border: none;
 }
 
-QLineEdit, QComboBox {
+QLineEdit {
     background-color: #FFFFFF;
     border: 1px solid #BDBDBD;
     padding: 4px 6px;
@@ -350,38 +350,13 @@ QLineEdit, QComboBox {
     min-height: 22px;
 }
 
-QLineEdit:focus, QComboBox:focus {
+QLineEdit:focus {
     border: 1px solid #42A5F5;
 }
 
 QLineEdit:read-only {
     background-color: #F5F5F5;
     color: #757575;
-}
-
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 20px;
-    border-left-width: 1px;
-    border-left-color: #BDBDBD;
-    border-left-style: solid;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
-    background-color: #F5F5F5;
-}
-
-QComboBox:hover {
-    border-color: #9E9E9E;
-}
-
-QComboBox QAbstractItemView {
-    border: 1px solid #BDBDBD;
-    background-color: #FFFFFF;
-    selection-background-color: #BBDEFB;
-    selection-color: #212121;
-    padding: 2px;
-    outline: 0px;
 }
 
 QCheckBox {
@@ -435,6 +410,87 @@ QLabel {
 QLabel#lblConnectionStatus {
     font-size: 14pt;
 }
+
+QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #BDBDBD;
+    padding: 4px 6px;
+    border-radius: 4px;
+    min-height: 22px;
+}
+
+QComboBox:hover {
+    border-color: #9E9E9E;
+}
+
+QComboBox:focus {
+    border: 1px solid #42A5F5;
+}
+
+QComboBox:disabled {
+    background-color: #F5F5F5;
+    color: #9E9E9E;
+    border-color: #E0E0E0;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left-width: 1px;
+    border-left-color: #BDBDBD;
+    border-left-style: solid;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    background-color: #F5F5F5;
+}
+
+QComboBox::drop-down:hover {
+    background-color: #EEEEEE;
+}
+
+QComboBox::drop-down:disabled {
+    background-color: #F5F5F5;
+    border-left-color: #E0E0E0;
+}
+
+QComboBox::down-arrow {
+}
+
+QComboBox::down-arrow:disabled {
+}
+
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid #BDBDBD;
+    border-radius: 4px;
+    padding: 1px;
+    outline: 0px;
+    selection-background-color: #BBDEFB;
+    selection-color: #212121;
+}
+
+QComboBox QAbstractItemView::item {
+    background-color: transparent;
+    color: #212121;
+    padding: 4px 8px;
+    min-height: 20px;
+    border: 1px solid transparent;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #EEEEEE !important;
+    color: #212121 !important;
+    border: 1px solid transparent !important;
+    border-left: 3px solid #42A5F5 !important;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #BBDEFB !important;
+    color: #212121 !important;
+    border: 1px solid transparent !important;
+}
+
 
 </string>
   </property>
@@ -816,6 +872,9 @@ QLabel#lblConnectionStatus {
            <width>111</width>
            <height>34</height>
           </rect>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
          </property>
          <property name="text">
           <string>Подключить</string>

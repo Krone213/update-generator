@@ -39,10 +39,10 @@ MainWindow::MainWindow(QWidget *parent)
     unit1 = new Unit1(ui, this);
     unit2 = new Unit2(ui, this);
 
-    // --- Загрузка конфига в MainWindow и ЗАПОЛНЕНИЕ ВСЕХ комбобоксов ---
+    // Загрузка конфига в MainWindow и ЗАПОЛНЕНИЕ ВСЕХ комбобоксов
     loadConfigAndPopulate("config.xml");
 
-    // --- Подключения для СИНХРОНИЗАЦИИ комбобоксов ---
+    // Подключения для СИНХРОНИЗАЦИИ комбобоксов
     connect(ui->cmbRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::handleRevisionComboBoxChanged);
     connect(ui->cmbUpdateRevision, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -81,6 +81,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    unit1->stopOpenOcd();
     delete ui;
 }
 
@@ -90,9 +91,11 @@ void MainWindow::loadConfigAndPopulate(const QString &filePath)
     revisionsMap.clear();
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) { QMessageBox::critical(this, "Ошибка", "Не удалось открыть config.xml: " + file.errorString()); return; }
+
     QDomDocument doc;
     QString errorMsg; int errorLine, errorColumn;
-    if (!doc.setContent(&file, true, &errorMsg, &errorLine, &errorColumn)) { QMessageBox::critical(this, "Ошибка разбора XML", QString("Невозможно разобрать config.xml\n%1\nСтрока: %2, Колонка: %3").arg(errorMsg).arg(errorLine).arg(errorColumn)); file.close(); return; }
+    if (!doc.setContent(&file, true, &errorMsg, &errorLine, &errorColumn)) { QMessageBox::critical(this, "Ошибка разбора XML",
+                              QString("Невозможно разобрать config.xml\n%1\nСтрока: %2, Колонка: %3").arg(errorMsg).arg(errorLine).arg(errorColumn)); file.close(); return; }
     file.close();
     QDomElement root = doc.documentElement();
     if (root.tagName() != "UpdateGenerator") { QMessageBox::critical(this, "Ошибка", "Неверный корневой элемент..."); return; }
@@ -147,49 +150,43 @@ void MainWindow::loadConfigAndPopulate(const QString &filePath)
 
 void MainWindow::appendToLog(const QString &message, bool isError)
 {
-    if (!ui || !ui->logTextEdit) return; // Всегда хорошая проверка
+    if (!ui || !ui->logTextEdit) return;
 
-    QString colorName; // Будем использовать имена цветов или hex-коды
+    QString colorName;
+    bool effectivelyAnError = isError;
 
-    if (isError) {
-        // isError теперь должен быть true только для НАСТОЯЩИХ ошибок
-        colorName = "red"; // #FF0000
+    if (isError && message.contains("The remote host closed the connection") && unit1 && unit1->wasShutdownCommandSent()) {
+        colorName = "gray"; // Или другой "не ошибочный" цвет
+        effectivelyAnError = false;
+    } else if (isError) {
+        colorName = "red";
     } else {
-        // --- Определяем цвет для НЕ-ошибочных сообщений ---
         if (message.contains("Verified OK") || message.contains("успешно завершены") || message.contains("Programming Finished") || message.contains("Telnet соединение установлено") || message.contains("Examination succeed")) {
-            colorName = "darkGreen"; // #006400 - Успех или важные позитивные события
+            colorName = "darkGreen";
         } else if (message.contains("[Telnet TX]")) {
-            colorName = "purple";    // #800080 - Команды, отправленные по Telnet
-        } else if (message.contains("Warn :")) { // Явно ищем предупреждения
-            colorName = "orange";   // #FFA500 - Предупреждения
+            colorName = "purple";
+        } else if (message.contains("Warn :")) {
+            colorName = "orange";
         } else if (message.startsWith("[OOCD ERR] Info :") || message.startsWith("[OOCD] Info :")) {
-            colorName = "gray"; // #808080 - Информационные сообщения OpenOCD можно сделать менее заметными
+            colorName = "gray";
         } else {
-            // Все остальное (обычный stdout, Telnet ответы, пользовательские сообщения)
-            colorName = "navy";     // #000080 - Темно-синий для основного лога
-            // или можно использовать цвет по умолчанию:
-            // colorName = ui->logTextEdit->palette().color(QPalette::Text).name();
+            colorName = "navy";
         }
     }
 
     QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
 
-    // Экранирование оставляем, это безопасно для HTML
     QString escapedMessage = message;
-    escapedMessage.replace('&', "&"); // Правильное HTML-экранирование
+    escapedMessage.replace('&', "&");
     escapedMessage.replace('<', "<");
     escapedMessage.replace('>', ">");
 
-    // Формируем HTML строку
     QString htmlMessage = QString("<font color='%1'>[%2] %3</font>")
                               .arg(colorName)
                               .arg(timestamp)
                               .arg(escapedMessage);
 
-    // Используем append, он понимает HTML и добавляет новую строку
     ui->logTextEdit->append(htmlMessage);
-
-    // --- Важно: Обеспечиваем прокрутку вниз ---
     ui->logTextEdit->moveCursor(QTextCursor::End);
     ui->logTextEdit->ensureCursorVisible();
 }

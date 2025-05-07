@@ -20,7 +20,7 @@
 #include "unit1.h"
 #include "unit2.h"
 
-#include "config_data.h" // Используем расширенную структуру
+#include "config_data.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -47,12 +47,12 @@ protected:
 private slots:
     void onExpertModeToggled(bool checked);
 
-    // --- Слоты для обработки изменений в комбобоксах ---
+    // Слоты для обработки изменений в комбобоксах
     void handleRevisionComboBoxChanged(int index);
     void handleUpdateRevisionComboBoxChanged(int index);
     void handleDeviceModelComboBoxChanged(int index);
 
-    // --- Слот для кнопки Unit2, требующей центральных данных ---
+    // Слот для кнопки Unit2, требующей центральных данных
     void onAutoCreateUpdateTriggered();
 
     void appendToLog(const QString &message, bool isError);
@@ -68,7 +68,7 @@ private:
 
     QMap<QString, ExtendedRevisionInfo> revisionsMap;
 
-    // --- Приватные методы ---
+    // Приватные методы
     void loadConfigAndPopulate(const QString &filePath);
     void updateUnit2UI(const QString& category);
     void synchronizeComboBoxes(QObject* senderComboBox);
