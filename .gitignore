@@ -73,13 +73,17 @@ CMakeLists.txt.user*
 *.dll
 *.exe
 
-!/necessaryFoldersAndFiles/ST-LINK/advapi32.dll
-!/necessaryFoldersAndFiles/ST-LINK/comctl32.dll
-!/necessaryFoldersAndFiles/ST-LINK/STLinkUSBDriver.dll
-!/necessaryFoldersAndFiles/ST-LINK/ST-LINK_CLI.exe
-!/necessaryFoldersAndFiles/openocd/libftdi1.dll
-!/necessaryFoldersAndFiles/openocd/openocd.exe
-!/necessaryFoldersAndFiles/openocd/libusb-1.0.dll
+!/necessaryFoldersAndFiles/openocd_win/bin/libftdi1.dll
+!/necessaryFoldersAndFiles/openocd_win/bin/openocd.exe
+!/necessaryFoldersAndFiles/openocd_win/bin/libusb-1.0.dll
+!/necessaryFoldersAndFiles/openocd_win/
+
+!/necessaryFoldersAndFiles/openocd_linux/
+
+!/necessaryFoldersAndFiles/Bootloader_File/
+!/necessaryFoldersAndFiles/MainProgram_File/
+
+!/necessaryFoldersAndFiles/config.xml
 
 # Directories with generated files
 .moc/
@@ -88,3 +92,4 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+/necessaryFoldersAndFiles/ST-LINK/

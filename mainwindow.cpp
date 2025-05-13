@@ -34,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(expertModeCheckbox, &QCheckBox::toggled, this, &MainWindow::onExpertModeToggled);
 
     expertSize = size();
-    simpleSize = QSize(800, 360);
+    simpleSize = QSize(800, 406);
 
     unit1 = new Unit1(ui, this);
     unit2 = new Unit2(ui, this);
@@ -346,43 +346,45 @@ void MainWindow::onExpertModeToggled(bool checked)
 
         // Меню "Начальная прошивка" - позиции из вашего кода
         ui->btnShowInfo->move(10, 620);
-        ui->btnCreateFileAuto->move(470, 620);
+        ui->btnCreateFileAuto->move(450, 620);
         ui->btnCreateFileManual->move(650, 620);
         ui->grpParameters->move(10, 350);
         ui->grpParameters->setFixedSize(761, 251);
         ui->grpSerialNumbers->setFixedSize(471, 181);
         ui->lblTotalFirmwareSize->move(10, 210);
-        ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() + 10);
-        ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() + 10);
         ui->logTextEdit->move(490, 85);
         ui->logTextEdit->setFixedSize(261, 121);
+        ui->cmbTargetMCU->move(490, 212);
+        ui->cmbTargetMCU->setFixedSize(261, 32);
+        ui->lblTotalFirmwareSize->move(10, 210);
 
         // Меню "Обновление прошивки" - позиции из вашего кода
         ui->btnUpdateShowInfo->move(10, 620);
-        ui->btnUpdateCreateFileAuto->move(470, 620);
+        ui->btnUpdateCreateFileAuto->move(460, 620);
         ui->btnUpdateCreateFileManual->move(650, 620);
-        ui->btnCreateCommonUpdateFile->move(210, 620);
+        ui->btnCreateCommonUpdateFile->move(190, 620);
     } else {
         setFixedSize(simpleSize);
 
         // Меню "Начальная прошивка"
-        ui->btnShowInfo->move(10, 260);
-        ui->btnCreateFileAuto->move(470, 260);
-        ui->btnCreateFileManual->move(650, 260);
+        ui->btnShowInfo->move(10, 406);
+        ui->btnCreateFileAuto->move(450, 306);
+        ui->btnCreateFileManual->move(650, 306);
         ui->grpParameters->move(10, 65);
-        ui->grpParameters->setFixedSize(761, 185);
-        ui->grpSerialNumbers->setFixedSize(350, 117);
+        ui->grpParameters->setFixedSize(761, 231);
+        ui->grpSerialNumbers->setFixedSize(350, 150);
         ui->lblTotalFirmwareSize->move(10, 146);
-        ui->editNumberOfSerials->move(160, ui->editNumberOfSerials->pos().y() - 10);
-        ui->lblNumberOfSerials->move(10, ui->lblNumberOfSerials->pos().y() - 10);
-        ui->logTextEdit->move(460, 80);
-        ui->logTextEdit->setFixedSize(292, 95);
+        ui->logTextEdit->move(440, 80);
+        ui->logTextEdit->setFixedSize(311, 95);
+        ui->cmbTargetMCU->move(440, 186);
+        ui->cmbTargetMCU->setFixedSize(311, 32);
+        ui->lblTotalFirmwareSize->move(10, 186);
 
         // Меню "Обновление прошивки"
-        ui->btnUpdateShowInfo->move(10, 260);
-        ui->btnUpdateCreateFileAuto->move(470, 260);
-        ui->btnUpdateCreateFileManual->move(650, 260);
-        ui->btnCreateCommonUpdateFile->move(210, 260);
+        ui->btnUpdateShowInfo->move(10, 306);
+        ui->btnUpdateCreateFileAuto->move(460, 306);
+        ui->btnUpdateCreateFileManual->move(650, 306);
+        ui->btnCreateCommonUpdateFile->move(190, 306);
     }
 
     QTimer::singleShot(0, this, [this]() {
