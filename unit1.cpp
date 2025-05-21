@@ -823,13 +823,20 @@ void Unit1::handleOpenOcdStarted() {
     m_isOpenOcdRunning = true;
     emit logToInterface("Процесс OpenOCD запущен.", false);
 
-    QTimer::singleShot(750, this, [this](){
-        if (m_isConnecting && m_telnetSocket->state() == QAbstractSocket::UnconnectedState) {
-            emit logToInterface(QString("Подключение к Telnet %1:%2...").arg(m_openOcdHost).arg(m_openOcdTelnetPort), false);
-            ui->lblConnectionStatus->setText("<font color='blue'><b>Подключение\n...</b></font>");
-            m_telnetSocket->connectToHost(m_openOcdHost, m_openOcdTelnetPort);
-        }
-    });
+    if (!m_isAttemptingAutoDetect) {
+        QTimer::singleShot(750, this, [this]() {
+            if (m_isConnecting && m_telnetSocket->state() == QAbstractSocket::UnconnectedState) {
+                emit logToInterface(QString("Подключение к Telnet %1:%2...").arg(m_openOcdHost).arg(m_openOcdTelnetPort), false);
+                if (!m_animationTimer->isActive() || !ui->lblConnectionStatus->text().contains("Подключение")) {
+                    ui->lblConnectionStatus->setText("<font color='blue'><b>Подключение\nTelnet...</b></font>");
+                    ui->lblConnectionStatus->setVisible(true);
+                    if (!m_animationTimer->isActive()) m_animationTimer->start();
+                    updateLoadingAnimation();
+                }
+                m_telnetSocket->connectToHost(m_openOcdHost, m_openOcdTelnetPort);
+            }
+        });
+    } else { }
 }
 
 void Unit1::handleTelnetReadyRead() {
