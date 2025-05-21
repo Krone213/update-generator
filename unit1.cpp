@@ -255,9 +255,9 @@ void Unit1::startOpenOcdForAutoDetect() {
         emit logToInterface("Критическая ошибка: Отсутствуют базовые файлы OpenOCD или скрипт интерфейса для автоопределения.", true);
         m_isAttemptingAutoDetect = false;
         m_isConnecting = false;
-        m_animationTimer->stop(); // Остановить анимацию
+        m_animationTimer->stop();
         ui->lblConnectionStatus->setText("<font color='red'>Ошибка\nфайлов</font>");
-        statusTimer->start(3000); // Показать ошибку на время
+        statusTimer->start(3000);
         ui->btnConnect->setEnabled(true);
         ui->cmbTargetMCU->setEnabled(true);
         updateUploadButtonsState();
@@ -361,8 +361,8 @@ void Unit1::processOpenOcdOutputForDetection(const QString& output) {
             const QList<uint> f3_dev_ids = {
                 0x414, // STM32F303xB/C (старые?), STM32F302xB/C?
                 0x422, // STM32F303x6/8, STM32F303xB/C, STM32F303xD/E, STM32F398xx, STM32F328xx, STM32F358xx
-                0x431, // STM32F302xDxE? - проверьте документацию
-                0x432, // STM32F373xx, STM32F378xx  <--- Этот ID был у вас в логе для F3
+                0x431, // STM32F302xDxE?
+                0x432, // STM32F373xx, STM32F378xx
                 0x438, // STM32F301x6/8, STM32F302x6/8, STM32F318xx
                 0x446  // STM32F334x4/6/8
             };
@@ -436,7 +436,7 @@ void Unit1::onBtnConnectClicked() {
         ui->cmbTargetMCU->setEnabled(false);
 
         startOpenOcdForAutoDetect();
-    } else { // MCU выбран пользователем, обычное подключение
+    } else {
         if (!checkOpenOcdPrerequisites(targetScriptFromCmb)) {
             m_isConnecting = false;
             return;

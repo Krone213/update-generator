@@ -29,7 +29,7 @@
 #include <cstring>
 
 #ifdef Q_OS_WIN
-#include <windows.h> // Для GetShortPathNameW
+#include <windows.h>
 #endif
 
 struct RevisionInfo {
@@ -57,12 +57,10 @@ private:
     QTimer *m_animationTimer;
     int m_animationFrame;
 
-    // Члены класса из оригинала ---
     QMap<QString, RevisionInfo> revisionsMap; // Карта для хранения данных ревизий Unit1
     QSet<QString> autoSavePaths;  // Множество всех путей автосохранения из <SaveFirmware>
     QString SaveFirmware; // Текущий путь автосохранения для выбранной ревизии
 
-    // Приватные методы из оригинала ---
     void loadConfig(const QString &filePath);
     QByteArray loadFile(const QString &filePath);
     void generateCRCTables(quint32* fwdTable, quint32* revTable);
@@ -74,36 +72,41 @@ private:
     void updateTotalFirmwareSize();
     void createFirmwareFiles(const QString &outputDir);
 
-    bool m_shutdownCommandSent;
+    // Автодетектор OpenOCD
+    bool m_isAttemptingAutoDetect;
+    QString m_detectedTargetScript;
+    QTimer* m_autoDetectTimeoutTimer;
+    void startOpenOcdForAutoDetect();
+    void processOpenOcdOutputForDetection(const QString& output);
+    void proceedWithConnection(const QString& targetScript);
 
-    bool m_isAttemptingAutoDetect;      // УБРАТЬ
-    QString m_detectedTargetScript;     // УБРАТЬ
-    QTimer* m_autoDetectTimeoutTimer;   // УБРАТЬ
-    void startOpenOcdForAutoDetect();    // Изменим сигнатуру или сделаем его внутренним для onBtnConnectClicked
-    void processOpenOcdOutputForDetection(const QString& output); // Тоже самое
-    void proceedWithConnection(const QString& targetScript); // Остается
-
+    // Пути OpenOCD
     QString m_openOcdDir;
     QString m_openOcdExecutablePath;
     QString m_openOcdScriptsPath;
     QString m_interfaceScript = "interface/stlink.cfg";
 
+    // ---------- Управление OpenOCD
     QProcess *m_openOcdProcess = nullptr;
     QTcpSocket *m_telnetSocket = nullptr;
     QString m_openOcdHost = "localhost";
     quint16 m_openOcdTelnetPort = 4444;
+    // Флаги состояния OpenOCD
     bool m_isOpenOcdRunning = false;
     bool m_isConnected = false;
     bool m_isConnecting = false;
     bool m_isProgramming = false;
-    QString m_firmwareFilePathForUpload;    // Полный путь к текущему временному файлу прошивки
-    QString m_originalFirmwarePathForLog;   // Для логирования оригинального пути
-    QString m_currentSafeTempSubdirPath;    // Полный путь к созданной безопасной временной ПОДПАПКЕ
+    bool m_shutdownCommandSent;
+    // Логика загрузки прошивки
+    QString m_firmwareFilePathForUpload;
+    QString m_originalFirmwarePathForLog;
+    QString m_currentSafeTempSubdirPath;
     QString m_firmwareAddress = "0x08000000";
     QByteArray m_receivedTelnetData;
 
     static const QString TEMP_SUBDIR_NAME_OPENOCD;
 
+    // ---------- Управление безопасными путями
 #ifdef Q_OS_WIN
     QString winGetShortPathName(const QString& longPath);
 #endif
@@ -115,15 +118,18 @@ public slots:
     void onBtnChooseLoaderFileClicked();
     void onBtnShowInfoClicked();
     void onBtnClearRevisionClicked();
-    void hideConnectionStatus();
     void onBtnCreateFileManualClicked();
     void onBtnCreateFileAutoClicked();
+    void hideConnectionStatus();
+
     void onBtnConnectClicked();
     void onbtnUploadCPU1Clicked();
     void onbtnUploadCPU2Clicked();
     void stopOpenOcd();
 
 private slots:
+    void onRevisionChanged(int index);
+
     void handleOpenOcdStarted();
     void handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void handleOpenOcdError(QProcess::ProcessError error);
@@ -134,13 +140,12 @@ private slots:
     void handleTelnetReadyRead();
     void handleTelnetError(QAbstractSocket::SocketError socketError);
 
-    void updateLoadingAnimation();
+    bool checkOpenOcdPrerequisites(const QString& targetScriptPath);
     void sendOpenOcdCommand(const QString &command);
     void processTelnetBuffer();
     void cleanupTemporaryFile();
-    bool checkOpenOcdPrerequisites(const QString& targetScriptPath);
+    void updateLoadingAnimation();
     void updateUploadButtonsState();
-    void onRevisionChanged(int index);
 };
 
 #endif // UNIT1_H
