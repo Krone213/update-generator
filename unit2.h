@@ -43,8 +43,6 @@ public slots:
     void onBtnUpdateCreateFileManualClicked();
     void onBtnUpdateShowInfoClicked();
     void onBtnClearUpdateRevisionClicked();
-    void onBtnCreateCommonUpdateFileClicked();
-
 };
 
 #endif // UNIT2_H

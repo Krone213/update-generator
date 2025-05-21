@@ -28,6 +28,10 @@
 
 #include <cstring>
 
+#ifdef Q_OS_WIN
+#include <windows.h> // Для GetShortPathNameW
+#endif
+
 struct RevisionInfo {
     QString bootloaderFile;
     QString mainProgramFile;
@@ -72,6 +76,12 @@ private:
 
     bool m_shutdownCommandSent;
 
+    bool m_isAttemptingAutoDetect;      // УБРАТЬ
+    QString m_detectedTargetScript;     // УБРАТЬ
+    QTimer* m_autoDetectTimeoutTimer;   // УБРАТЬ
+    void startOpenOcdForAutoDetect();    // Изменим сигнатуру или сделаем его внутренним для onBtnConnectClicked
+    void processOpenOcdOutputForDetection(const QString& output); // Тоже самое
+    void proceedWithConnection(const QString& targetScript); // Остается
 
     QString m_openOcdDir;
     QString m_openOcdExecutablePath;
@@ -86,10 +96,19 @@ private:
     bool m_isConnected = false;
     bool m_isConnecting = false;
     bool m_isProgramming = false;
-    QString m_firmwareFilePathForUpload;
-    QString m_originalFirmwarePathForLog;
+    QString m_firmwareFilePathForUpload;    // Полный путь к текущему временному файлу прошивки
+    QString m_originalFirmwarePathForLog;   // Для логирования оригинального пути
+    QString m_currentSafeTempSubdirPath;    // Полный путь к созданной безопасной временной ПОДПАПКЕ
     QString m_firmwareAddress = "0x08000000";
     QByteArray m_receivedTelnetData;
+
+    static const QString TEMP_SUBDIR_NAME_OPENOCD;
+
+#ifdef Q_OS_WIN
+    QString winGetShortPathName(const QString& longPath);
+#endif
+    QString getSafeTemporaryDirectoryBasePath();
+    bool ensureDirectoryExists(const QString& path);
 
 public slots:
     void onBtnChooseProgramDataFileClicked();
@@ -100,7 +119,8 @@ public slots:
     void onBtnCreateFileManualClicked();
     void onBtnCreateFileAutoClicked();
     void onBtnConnectClicked();
-    void onBtnUploadClicked();
+    void onbtnUploadCPU1Clicked();
+    void onbtnUploadCPU2Clicked();
     void stopOpenOcd();
 
 private slots:
@@ -118,7 +138,8 @@ private slots:
     void sendOpenOcdCommand(const QString &command);
     void processTelnetBuffer();
     void cleanupTemporaryFile();
-    bool checkOpenOcdPrerequisites();
+    bool checkOpenOcdPrerequisites(const QString& targetScriptPath);
+    void updateUploadButtonsState();
     void onRevisionChanged(int index);
 };
 

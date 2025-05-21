@@ -1,3 +1,4 @@
+// config_data.h
 #ifndef CONFIG_DATA_H
 #define CONFIG_DATA_H
 
@@ -17,13 +18,14 @@ inline bool getBoolAttr(const QDomElement& element, const QString& attrName, boo
 // Расширенная структура - используется MainWindow для чтения XML и передачи данных в Unit2
 struct ExtendedRevisionInfo {
     // --- Поля для Unit1 (MainWindow читает, но Unit1 использует свои) ---
-    QString category;
+    QString category;         // e.g., "КНЯ85-4 103 (vB)"
     QString bootloaderFile;
     QString mainProgramFile;
+    QString deviceModelXmlName; // Stores the DeviceModel/@name like "MD01-DON", "IN22"
     QString saveFirmwarePath; // Для Unit1
 
     // --- Поля для Unit2 ---
-    QString bldrDevModel;
+    QString bldrDevModel;     // e.g., "KR05ru.vB"
     QString beginAddress;
     QString saveUpdatePath;   // Для Unit2
 
