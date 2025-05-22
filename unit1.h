@@ -25,6 +25,7 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QStandardPaths>
+#include <QQueue>
 
 #include <cstring>
 
@@ -125,6 +126,7 @@ public slots:
     void onBtnConnectClicked();
     void onbtnUploadCPU1Clicked();
     void onbtnUploadCPU2Clicked();
+    void onBtnEraseChipClicked();
     void stopOpenOcd();
 
 private slots:

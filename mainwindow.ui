@@ -873,7 +873,7 @@ QComboBox QAbstractItemView::item:selected {
           <rect>
            <x>480</x>
            <y>40</y>
-           <width>271</width>
+           <width>221</width>
            <height>34</height>
           </rect>
          </property>
@@ -927,6 +927,25 @@ QComboBox QAbstractItemView::item:selected {
          </property>
          <property name="text">
           <string>MCU:</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="btnEraseChip">
+         <property name="geometry">
+          <rect>
+           <x>710</x>
+           <y>40</y>
+           <width>41</width>
+           <height>34</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>С</string>
          </property>
         </widget>
        </widget>

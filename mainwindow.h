@@ -74,14 +74,12 @@ private:
     QMap<QString, ExtendedRevisionInfo> revisionsMap;
     QCheckBox *expertModeCheckbox;
 
-    // Приватные методы
+    QString findCategoryForModel(const QString& modelName);
     void loadConfigAndPopulate(const QString &filePath);
     void updateUnit2UI(const QString& category);
     void synchronizeComboBoxes(QObject* senderComboBox);
     void filterAndPopulateRevisionComboBoxes(const QString& deviceModelXmlName, QComboBox* sourceDevModelComboBox = nullptr);
-    QString findCategoryForModel(const QString& modelName);
     void updateBldrDevModelDisplay(const QString& category);
-
 };
 
 #endif // MAINWINDOW_H

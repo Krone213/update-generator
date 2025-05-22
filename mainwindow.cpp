@@ -64,6 +64,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnConnect, &QPushButton::clicked, unit1, &Unit1::onBtnConnectClicked);
     connect(ui->btnUploadCPU1, &QPushButton::clicked, unit1, &Unit1::onbtnUploadCPU1Clicked);
     connect(ui->btnUploadCPU2, &QPushButton::clicked, unit1, &Unit1::onbtnUploadCPU2Clicked);
+    connect(ui->btnEraseChip, &QPushButton::clicked, unit1, &Unit1::onBtnEraseChipClicked);
 
     // Unit2 connections ...
     connect(ui->btnChooseUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnChooseUpdateProgramDataFileClicked);

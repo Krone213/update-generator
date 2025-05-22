@@ -445,9 +445,86 @@ void Unit1::onBtnConnectClicked() {
     }
 }
 
+void Unit1::onBtnEraseChipClicked() {
+    if (!m_isConnected) {
+        emit logToInterface("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
+        return;
+    }
+    if (m_isProgramming) {
+        emit logToInterface("Другая операция (программирование/стирание) уже выполняется.", true);
+        return;
+    }
+
+    QString currentTargetScript = ui->cmbTargetMCU->currentData().toString();
+    if (currentTargetScript.isEmpty()) {
+        emit logToInterface("Ошибка: Не выбран целевой MCU. Невозможно определить команду стирания.", true);
+        return;
+    }
+
+    QString mcuFamily = QFileInfo(currentTargetScript).baseName();
+    if (mcuFamily.isEmpty() || !mcuFamily.startsWith("stm32")) {
+        emit logToInterface("Ошибка: Не удалось определить семейство MCU из скрипта: " + currentTargetScript, true);
+        return;
+    }
+
+    m_isProgramming = true;
+    m_shutdownCommandSent = false;
+
+    emit logToInterface(QString("!! Начало стирания чипа для %1...").arg(mcuFamily), false);
+    ui->lblConnectionStatus->setText(QString("<font color='blue'><b>Стирание<br>%1...</b></font>").arg(mcuFamily.toUpper()));
+    ui->lblConnectionStatus->setVisible(true);
+    m_animationFrame = -1;
+    if (!m_animationTimer->isActive()) {
+        m_animationTimer->start();
+    }
+    updateLoadingAnimation();
+    statusTimer->stop();
+
+    updateUploadButtonsState();
+
+    m_receivedTelnetData.clear();
+    sendOpenOcdCommand("reset halt");
+
+    QTimer::singleShot(200, this, [this, mcuFamily]() {
+        if (!m_isProgramming) return;
+
+        QString eraseCommand = QString("%1 mass_erase 0").arg(mcuFamily);
+        emit logToInterface(QString("Отправка команды стирания: %1").arg(eraseCommand), false);
+        sendOpenOcdCommand(eraseCommand);
+
+        QTimer::singleShot(5000, this, [this, mcuFamily]() {
+            if (!m_isProgramming) return;
+
+            bool commandErrorDetected = m_receivedTelnetData.contains("Error:") ||
+                                        m_receivedTelnetData.contains("failed") ||
+                                        m_receivedTelnetData.contains("invalid command");
+
+            if (commandErrorDetected) {
+                emit logToInterface(QString("Ошибка во время выполнения команды стирания для %1. Проверьте логи OpenOCD.").arg(mcuFamily), true);
+                m_animationTimer->stop();
+                ui->lblConnectionStatus->setText(QString("<font color='red'><b>Стирание<br>%1 ✗</b></font>").arg(mcuFamily.toUpper()));
+                statusTimer->start(4000);
+                m_isProgramming = false;
+                updateUploadButtonsState();
+            } else {
+                emit logToInterface(QString("Команда стирания чипа для %1 отправлена. Предполагаемый успех. Завершение сессии OpenOCD.").arg(mcuFamily), false);
+                m_animationTimer->stop();
+                ui->lblConnectionStatus->setText(QString("<font color='green'><b>Стирание<br> ОК</b></font>"));
+                statusTimer->start(3000);
+
+                sendOpenOcdCommand("shutdown");
+                m_shutdownCommandSent = true;
+            }
+        });
+    });
+}
+
 void Unit1::updateUploadButtonsState() {
     bool cpu1Enabled = false;
     bool cpu2Enabled = false;
+
+    bool canInteract = m_isConnected && !m_isConnecting && !m_isProgramming;
+    bool eraseEnabled = canInteract;
 
     if (m_isConnected && !m_isConnecting && !m_isProgramming) {
         QString targetScript = ui->cmbTargetMCU->currentData().toString();
@@ -472,6 +549,7 @@ void Unit1::updateUploadButtonsState() {
 
     if(ui->btnUploadCPU1) ui->btnUploadCPU1->setEnabled(cpu1Enabled);
     if(ui->btnUploadCPU2) ui->btnUploadCPU2->setEnabled(cpu2Enabled);
+    if(ui->btnEraseChip) ui->btnEraseChip->setEnabled(eraseEnabled);
 }
 
 void Unit1::onbtnUploadCPU1Clicked() {
@@ -484,14 +562,15 @@ void Unit1::onbtnUploadCPU1Clicked() {
         return;
     }
 
+    QString originalFirmwarePath;
+
 #ifdef Q_OS_WIN
     QString CPU1dir = "\\Файл прошивки CPU1";
+    QString defaultDir = QCoreApplication::applicationDirPath() + CPU1dir;
 #else
     QString CPU1dir = "/Файл прошивки CPU1";
+    QString defaultDir = "/opt/UpdateGenerator" + CPU1dir;
 #endif
-
-    QString originalFirmwarePath;
-    QString defaultDir = QCoreApplication::applicationDirPath() + CPU1dir;
 
     originalFirmwarePath = QFileDialog::getOpenFileName(
         nullptr,
@@ -608,18 +687,19 @@ void Unit1::onbtnUploadCPU2Clicked() {
         return;
     }
     if (m_isProgramming) {
-        emit logToInterface("Программирование уже выполняется.", true);
+        emit logToInterface("Программирование или другая операция уже выполняется.", true);
         return;
     }
 
+    QString originalFirmwarePath;
+
 #ifdef Q_OS_WIN
     QString CPU2dir = "\\Файл прошивки CPU2";
+    QString defaultDir = QCoreApplication::applicationDirPath() + CPU2dir;
 #else
     QString CPU2dir = "/Файл прошивки CPU2";
+    QString defaultDir = "/opt/UpdateGenerator" + CPU2dir;
 #endif
-
-    QString originalFirmwarePath;
-    QString defaultDir = QCoreApplication::applicationDirPath() + CPU2dir;
 
     originalFirmwarePath = QFileDialog::getOpenFileName(
         nullptr,
@@ -703,28 +783,98 @@ void Unit1::onbtnUploadCPU2Clicked() {
         }
     }
     if (!finalPathIsAscii) {
-        emit logToInterface("КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: Финальный путь для OpenOCD ("+firmwarePathForOcd+") содержит не-ASCII символы! Программирование может не удасться.", true);
+        emit logToInterface("КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: Финальный путь для OpenOCD "
+                            "("+firmwarePathForOcd+") содержит не-ASCII символы! Программирование может не удасться.", true);
     }
     emit logToInterface("Путь для OpenOCD (проверен на ASCII): " + firmwarePathForOcd, false);
 
     m_shutdownCommandSent = false;
     m_isProgramming = true;
-    emit logToInterface("!! Начало программирования (файл: " + originalFileInfo.fileName() + ")", false);
 
-    ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка\n...</b></font>");
+    emit logToInterface("!! Начало стирания чипа перед программированием...", false);
+    ui->lblConnectionStatus->setText("<font color='blue'><b>Стирание<br>...</b></font>");
     ui->lblConnectionStatus->setVisible(true);
     m_animationFrame = -1;
     if (!m_animationTimer->isActive()) m_animationTimer->start();
     updateLoadingAnimation();
     statusTimer->stop();
+    updateUploadButtonsState();
+
+    QString currentTargetScript = ui->cmbTargetMCU->currentData().toString();
+    QString mcuFamily;
+    if (!currentTargetScript.isEmpty()) {
+        mcuFamily = QFileInfo(currentTargetScript).baseName();
+    }
+    if (mcuFamily.isEmpty() || !mcuFamily.startsWith("stm32")) {
+        emit logToInterface("Ошибка: Не удалось определить семейство MCU для стирания перед программированием.", true);
+        m_isProgramming = false;
+        updateUploadButtonsState();
+        cleanupTemporaryFile();
+        return;
+    }
 
     m_receivedTelnetData.clear();
     sendOpenOcdCommand("reset halt");
-    QTimer::singleShot(200, this, [this, firmwarePathForOcd]() {
-        if (m_isProgramming) {
-            QString programCmd = QString("program \"%1\" %2 verify reset").arg(firmwarePathForOcd).arg(m_firmwareAddress);
-            sendOpenOcdCommand(programCmd);
+
+    QTimer::singleShot(200, this, [this, mcuFamily, firmwarePathForOcd, originalFileInfo]() {
+        if (!m_isProgramming) {
+            cleanupTemporaryFile();
+            return;
         }
+
+        QString eraseCommand = QString("%1 mass_erase 0").arg(mcuFamily);
+        emit logToInterface(QString("Отправка команды стирания: %1").arg(eraseCommand), false);
+        sendOpenOcdCommand(eraseCommand);
+
+        QTimer::singleShot(5000, this, [this, firmwarePathForOcd, originalFileInfo, mcuFamily, eraseCommand]() {
+            if (!m_isProgramming) {
+                cleanupTemporaryFile();
+                return;
+            }
+
+            QString telnetOutput = QString::fromUtf8(m_receivedTelnetData);
+            QString eraseCommandFirstWord = eraseCommand.split(" ").first();
+
+            bool eraseErrorDetected = telnetOutput.contains("Error:", Qt::CaseInsensitive) ||
+                                      telnetOutput.contains("failed", Qt::CaseInsensitive) ||
+                                      (telnetOutput.contains("invalid command", Qt::CaseInsensitive) && telnetOutput.contains(eraseCommandFirstWord, Qt::CaseInsensitive) );
+
+            if (eraseErrorDetected) {
+                emit logToInterface(QString("Ошибка во время стирания чипа (%1) перед программированием. Программирование отменено.").arg(mcuFamily), true);
+                m_animationTimer->stop();
+                ui->lblConnectionStatus->setText(QString("<font color='red'><b>Стирание<br>%1 ✗</b></font>").arg(mcuFamily.toUpper()));
+                statusTimer->start(4000);
+                m_isProgramming = false;
+                updateUploadButtonsState();
+                cleanupTemporaryFile();
+
+                if (m_isOpenOcdRunning && m_telnetSocket && m_telnetSocket->state() == QAbstractSocket::ConnectedState) {
+                    sendOpenOcdCommand("shutdown");
+                    m_shutdownCommandSent = true;
+                } else if (m_isOpenOcdRunning) {
+                    stopOpenOcd();
+                }
+                return;
+            }
+
+            emit logToInterface(QString("Стирание чипа (%1) успешно. Начало программирования файла: %2").arg(mcuFamily).arg(originalFileInfo.fileName()), false);
+
+            ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка\n...</b></font>");
+            updateLoadingAnimation();
+
+            m_receivedTelnetData.clear();
+            sendOpenOcdCommand("reset halt");
+
+            QTimer::singleShot(200, this, [this, firmwarePathForOcd]() {
+                if (!m_isProgramming) {
+                    cleanupTemporaryFile();
+                    return;
+                }
+                QString programCmd = QString("program \"%1\" %2 verify reset").arg(firmwarePathForOcd).arg(m_firmwareAddress);
+                emit logToInterface(QString("Отправка команды программирования: %1").arg(programCmd), false);
+                sendOpenOcdCommand(programCmd);
+            });
+        });
     });
 }
 
