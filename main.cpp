@@ -2,10 +2,12 @@
 
 #include <QApplication>
 #include <QStyleFactory>
+#include <QIcon>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setWindowIcon(QIcon(":/appicon"));
 
     a.setStyle(QStyleFactory::create("Fusion"));
 

@@ -4,7 +4,6 @@
 
 #include <stdexcept>
 
-// Define types like in C++Builder
 typedef signed char s8;
 typedef signed short s16;
 typedef signed long s32;
@@ -12,7 +11,6 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 
-// Use quint types for better portability
 typedef quint8  quint8_t;
 typedef quint16 quint16_t;
 typedef quint32 quint32_t;
@@ -51,6 +49,7 @@ struct TUpdateTask
         memcpy(dest, ba.constData(), bytesToCopy);
     }
 };
+
 #pragma pack(pop)
 
 // Команды загрузчику
@@ -89,13 +88,12 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
     qDebug() << "Output file path:" << outputFileAbsPath;
 
     TUpdateTask updateTask;
-    memset(&updateTask, 0, sizeof(TUpdateTask)); // Initialize struct with zeros
+    memset(&updateTask, 0, sizeof(TUpdateTask));
 
     bool ok;
     QString errorTitle = tr("Ошибка");
 
     try {
-        // --- 1. Get Data from UI and Validate ---
         QString programFilePathRel = ui->lblUpdateProgramDataFileName->text();
         if (programFilePathRel.startsWith("Файл:") || programFilePathRel.isEmpty()) {
             throw std::runtime_error(tr("Файл программы для обновления не выбран.").toStdString());
@@ -119,7 +117,6 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
             throw std::runtime_error(tr("Модель устройства не выбрана или не указана.").toStdString());
         }
 
-        // Use corrected field names
         QString devDesc = ui->editDeviceDescriptor->text().trimmed();
         QString devSerial = ui->editSerialNumber->text().trimmed();
         QString devId = ui->editHardwareId->text().trimmed();
@@ -139,7 +136,6 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         qDebug() << "Addresses: EraseStart: 0x" << QString::number(eraseBeginAddr, 16) << "EraseEnd: 0x" <<
             QString::number(eraseEndAddr, 16) << "ProgStart: 0x" << QString::number(progBeginAddr, 16);
 
-        // --- 2. Load Program Data ---
         QFile file(programFilePathAbs);
         if (!file.open(QIODevice::ReadOnly)) {
             throw std::runtime_error(tr("Не удалось открыть файл программы: %1").arg(file.errorString()).toStdString());
@@ -148,7 +144,6 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         file.close();
         qDebug() << "Loaded program data size:" << programData.size();
 
-        // --- 3. Populate TUpdateTask ---
         updateTask.FileId = qToLittleEndian(0x52444C42); // "BLDR"
         updateTask.BlockType = qToLittleEndian(0x00010000);
         updateTask.Version = qToLittleEndian(0x00000100); // 1.00
@@ -211,11 +206,9 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
 
         updateTask.Crc = qToLittleEndian(headerCRC); // Store LE version
 
-        // --- 4. PSP Encoding ---
         TUpdateTask encodedTask = updateTask; // Copy final struct
         QByteArray encodedData = programData; // Copy program data
 
-        // Encode header (task) - everything EXCEPT the final Crc field
         qDebug() << "Encoding header (size:" << headerSizeForCrc << ") with seed: 0x" << QString::number(headerCRC, 16).toUpper().rightJustified(8, '0');
         applyPSPEncoding(
             reinterpret_cast<quint8_t*>(&encodedTask),
@@ -226,7 +219,8 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
         // Encode program data (if any)
         if (!encodedData.isEmpty()) {
             quint32_t dataEncodingSeed = headerCRC ^ programCRC; // Seed = HeaderCRC XOR ProgramCRC (Use HOST byte order CRCs)
-            qInfo() << "Encoding data (size:" << encodedData.size() << ") with seed:   0x" + QString::number(dataEncodingSeed, 16).toUpper().rightJustified(8, '0');
+            qInfo() << "Encoding data (size:" << encodedData.size() << ") with seed:   0x" +
+                        QString::number(dataEncodingSeed, 16).toUpper().rightJustified(8, '0');
             applyPSPEncoding(
                 reinterpret_cast<quint8_t*>(encodedData.data()),
                 encodedData.size(),
@@ -236,7 +230,6 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
             qDebug() << "No program data to encode.";
         }
 
-        // --- 5. Write Output File ---
         QSaveFile saveFile(outputFileAbsPath);
         if (!saveFile.open(QIODevice::WriteOnly)) {
             throw std::runtime_error(tr("Не удалось открыть файл для записи: %1").arg(saveFile.errorString()).toStdString());
@@ -258,7 +251,6 @@ void Unit2::createUpdateFiles(const QString &outputFileAbsPath) {
             throw std::runtime_error(tr("Не удалось сохранить файл: %1").arg(saveFile.errorString()).toStdString());
         }
 
-        // --- 6. Success Message ---
         QMessageBox::information(ui->cmbUpdateRevision->window(),
                                  tr("Готово"),
                                  tr("Файл обновления '%1' успешно создан.")
@@ -417,23 +409,19 @@ void Unit2::onBtnClearUpdateRevisionClicked()
 {
     qDebug() << "Unit2::onBtnClearUpdateRevisionClicked: Запущен процесс очистки папок обновлений.";
 
-    // Получаем указатель на родительский объект
     QObject* parentObj = this->parent();
-    MainWindow* mainWindow = qobject_cast<MainWindow*>(parentObj); // Пытаемся преобразовать родителя к MainWindow
+    MainWindow* mainWindow = qobject_cast<MainWindow*>(parentObj);
 
-    // Проверяем, удалось ли получить MainWindow и указатель на UI
     if (!mainWindow || !ui) {
-        QMessageBox::critical(nullptr, // Не можем получить родительское окно безопасно
+        QMessageBox::critical(nullptr,
                               tr("Критическая ошибка"),
                               tr("Не удалось получить доступ к главному окну для получения путей очистки."));
         qCritical() << "Очистка папок обновлений: Не удалось получить MainWindow из parent() или UI не инициализирован.";
         return;
     }
 
-    // 1. Получаем список путей из MainWindow
     QSet<QString> updateAutoSavePaths = mainWindow->getUpdateAutoSavePaths();
 
-    // 2. Проверяем, есть ли информация о путях
     if (updateAutoSavePaths.isEmpty()) {
         QMessageBox::information(ui->btnClearUpdateRevision->window(), // Теперь используем ui для окна
                                  tr("Очистка (Обновление)"),
@@ -443,7 +431,6 @@ void Unit2::onBtnClearUpdateRevisionClicked()
         return;
     }
 
-    // 3. Готовим список путей для сообщения пользователю (логика без изменений)
     QStringList pathsToDeleteDisplay;
     QString currentDir = QDir::currentPath();
     for (const QString &pathFragment : std::as_const(updateAutoSavePaths)) {
@@ -458,7 +445,6 @@ void Unit2::onBtnClearUpdateRevisionClicked()
                                      "Это действие необратимо. Вы уверены, что хотите продолжить?")
                                       .arg(pathsToDeleteDisplay.join("\n"));
 
-    // 4. Запрашиваем подтверждение у пользователя (логика без изменений)
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(ui->btnClearUpdateRevision->window(),
                                   tr("Подтверждение очистки папок обновлений"),
@@ -471,7 +457,6 @@ void Unit2::onBtnClearUpdateRevisionClicked()
         return;
     }
 
-    // 5. Выполняем удаление (логика без изменений)
     qInfo() << "Очистка папок обновлений: Начало удаления...";
     int successCount = 0;
     int failCount = 0;
@@ -496,7 +481,6 @@ void Unit2::onBtnClearUpdateRevisionClicked()
         }
     }
 
-    // 6. Сообщаем результат пользователю (логика без изменений)
     QString resultMessage;
     QString resultTitle = tr("Очистка папок обновлений");
 

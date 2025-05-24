@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>800</height>
+    <height>831</height>
    </rect>
   </property>
   <property name="palette">
@@ -211,9 +211,6 @@
   </property>
   <property name="windowTitle">
    <string>UpdateGenerator v3.0</string>
-  </property>
-  <property name="windowIcon">
-   <iconset theme="applications-development"/>
   </property>
   <property name="styleSheet">
    <string notr="true">
@@ -520,6 +517,9 @@ QComboBox QAbstractItemView::item:selected {
        <bool>false</bool>
       </property>
       <widget class="QWidget" name="StartFirmwareMenu">
+       <property name="cursor">
+        <cursorShape>ArrowCursor</cursorShape>
+       </property>
        <attribute name="title">
         <string>Начальная прошивка</string>
        </attribute>
@@ -601,7 +601,7 @@ QComboBox QAbstractItemView::item:selected {
          </property>
         </widget>
        </widget>
-       <widget class="QLabel" name="lblRevision">
+       <widget class="QLabel" name="lblModel">
         <property name="geometry">
          <rect>
           <x>20</x>
@@ -636,6 +636,9 @@ QComboBox QAbstractItemView::item:selected {
         <property name="cursor">
          <cursorShape>ArrowCursor</cursorShape>
         </property>
+        <property name="placeholderText">
+         <string>Выберите ревизию...</string>
+        </property>
        </widget>
        <widget class="QGroupBox" name="grpParameters">
         <property name="geometry">
@@ -643,7 +646,7 @@ QComboBox QAbstractItemView::item:selected {
           <x>10</x>
           <y>390</y>
           <width>761</width>
-          <height>301</height>
+          <height>331</height>
          </rect>
         </property>
         <property name="font">
@@ -659,8 +662,8 @@ QComboBox QAbstractItemView::item:selected {
           <rect>
            <x>10</x>
            <y>25</y>
-           <width>341</width>
-           <height>224</height>
+           <width>340</width>
+           <height>225</height>
           </rect>
          </property>
          <property name="font">
@@ -687,6 +690,9 @@ QComboBox QAbstractItemView::item:selected {
            <font>
             <pointsize>10</pointsize>
            </font>
+          </property>
+          <property name="cursor">
+           <cursorShape>PointingHandCursor</cursorShape>
           </property>
           <property name="text">
            <string>Обновить CRC32</string>
@@ -793,7 +799,7 @@ QComboBox QAbstractItemView::item:selected {
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>260</y>
+           <y>290</y>
            <width>401</width>
            <height>31</height>
           </rect>
@@ -811,7 +817,7 @@ QComboBox QAbstractItemView::item:selected {
          <property name="geometry">
           <rect>
            <x>480</x>
-           <y>80</y>
+           <y>85</y>
            <width>131</width>
            <height>34</height>
           </rect>
@@ -836,9 +842,9 @@ QComboBox QAbstractItemView::item:selected {
          <property name="geometry">
           <rect>
            <x>480</x>
-           <y>124</y>
+           <y>130</y>
            <width>271</width>
-           <height>126</height>
+           <height>151</height>
           </rect>
          </property>
          <property name="readOnly">
@@ -894,7 +900,7 @@ QComboBox QAbstractItemView::item:selected {
          <property name="geometry">
           <rect>
            <x>480</x>
-           <y>260</y>
+           <y>290</y>
            <width>271</width>
            <height>32</height>
           </rect>
@@ -904,7 +910,7 @@ QComboBox QAbstractItemView::item:selected {
          <property name="geometry">
           <rect>
            <x>620</x>
-           <y>80</y>
+           <y>85</y>
            <width>131</width>
            <height>34</height>
           </rect>
@@ -916,11 +922,11 @@ QComboBox QAbstractItemView::item:selected {
           <string>Загрузить CPU2</string>
          </property>
         </widget>
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="lblMCU">
          <property name="geometry">
           <rect>
            <x>430</x>
-           <y>260</y>
+           <y>290</y>
            <width>51</width>
            <height>31</height>
           </rect>
@@ -944,8 +950,29 @@ QComboBox QAbstractItemView::item:selected {
            <bold>true</bold>
           </font>
          </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
          <property name="text">
           <string>С</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="lblWhatWillUpload">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>260</y>
+           <width>401</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Будет прошиваться: -</string>
          </property>
         </widget>
        </widget>
@@ -953,7 +980,7 @@ QComboBox QAbstractItemView::item:selected {
         <property name="geometry">
          <rect>
           <x>650</x>
-          <y>700</y>
+          <y>730</y>
           <width>121</width>
           <height>34</height>
          </rect>
@@ -975,7 +1002,7 @@ QComboBox QAbstractItemView::item:selected {
         <property name="geometry">
          <rect>
           <x>450</x>
-          <y>700</y>
+          <y>730</y>
           <width>181</width>
           <height>34</height>
          </rect>
@@ -997,7 +1024,7 @@ QComboBox QAbstractItemView::item:selected {
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>700</y>
+          <y>730</y>
           <width>75</width>
           <height>34</height>
          </rect>
@@ -1113,7 +1140,7 @@ QComboBox QAbstractItemView::item:selected {
          <string>Очистка</string>
         </property>
        </widget>
-       <widget class="QLabel" name="lblRevision_2">
+       <widget class="QLabel" name="lblRevision">
         <property name="geometry">
          <rect>
           <x>20</x>
@@ -1148,9 +1175,15 @@ QComboBox QAbstractItemView::item:selected {
         <property name="cursor">
          <cursorShape>ArrowCursor</cursorShape>
         </property>
+        <property name="placeholderText">
+         <string>Выберите модель...</string>
+        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="UpdateFirmwareMenu">
+       <property name="cursor">
+        <cursorShape>ArrowCursor</cursorShape>
+       </property>
        <attribute name="title">
         <string>Обновление прошивки</string>
        </attribute>
@@ -1171,8 +1204,11 @@ QComboBox QAbstractItemView::item:selected {
         <property name="cursor">
          <cursorShape>ArrowCursor</cursorShape>
         </property>
+        <property name="placeholderText">
+         <string>Выберите ревизию...</string>
+        </property>
        </widget>
-       <widget class="QLabel" name="lblUpdateRevision">
+       <widget class="QLabel" name="lblUpdateModel">
         <property name="geometry">
          <rect>
           <x>20</x>
@@ -1295,7 +1331,7 @@ QComboBox QAbstractItemView::item:selected {
           <x>10</x>
           <y>240</y>
           <width>761</width>
-          <height>451</height>
+          <height>481</height>
          </rect>
         </property>
         <property name="font">
@@ -1549,7 +1585,7 @@ QComboBox QAbstractItemView::item:selected {
            <x>10</x>
            <y>270</y>
            <width>231</width>
-           <height>171</height>
+           <height>201</height>
           </rect>
          </property>
          <property name="font">
@@ -1566,16 +1602,19 @@ QComboBox QAbstractItemView::item:selected {
             <x>10</x>
             <y>25</y>
             <width>211</width>
-            <height>141</height>
+            <height>171</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout">
+          <layout class="QVBoxLayout" name="verticalLayout_Commands">
            <item>
             <widget class="QCheckBox" name="main_prog">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="text">
               <string>Основная программа</string>
@@ -1589,6 +1628,9 @@ QComboBox QAbstractItemView::item:selected {
                <pointsize>10</pointsize>
               </font>
              </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="text">
               <string>Только для указанного S/N</string>
              </property>
@@ -1601,6 +1643,9 @@ QComboBox QAbstractItemView::item:selected {
                <pointsize>10</pointsize>
               </font>
              </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="text">
               <string>Только для указанного DevID</string>
              </property>
@@ -1612,6 +1657,9 @@ QComboBox QAbstractItemView::item:selected {
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="text">
               <string>Без проверки модели</string>
@@ -1627,7 +1675,7 @@ QComboBox QAbstractItemView::item:selected {
            <x>250</x>
            <y>270</y>
            <width>501</width>
-           <height>171</height>
+           <height>201</height>
           </rect>
          </property>
          <property name="font">
@@ -1644,16 +1692,19 @@ QComboBox QAbstractItemView::item:selected {
             <x>10</x>
             <y>25</y>
             <width>483</width>
-            <height>141</height>
+            <height>171</height>
            </rect>
           </property>
-          <layout class="QGridLayout" name="gridLayout_2">
+          <layout class="QGridLayout" name="gridLayout_AddOptions">
            <item row="0" column="0">
             <widget class="QCheckBox" name="SaveBthName">
              <property name="font">
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="text">
               <string>Сохранять &quot;ВТН имя прибора&quot;</string>
@@ -1667,6 +1718,9 @@ QComboBox QAbstractItemView::item:selected {
                <pointsize>10</pointsize>
               </font>
              </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="text">
               <string>Сохранять &quot;версия прош. прибора&quot;</string>
              </property>
@@ -1678,6 +1732,9 @@ QComboBox QAbstractItemView::item:selected {
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="text">
               <string>Сохранять &quot;ВТН адрес прибора&quot;</string>
@@ -1691,6 +1748,9 @@ QComboBox QAbstractItemView::item:selected {
                <pointsize>10</pointsize>
               </font>
              </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="text">
               <string>Сохранять &quot;сер. номер прибора&quot;</string>
              </property>
@@ -1702,6 +1762,9 @@ QComboBox QAbstractItemView::item:selected {
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="text">
               <string>Сохранять &quot;описание прибора&quot;</string>
@@ -1715,6 +1778,9 @@ QComboBox QAbstractItemView::item:selected {
                <pointsize>10</pointsize>
               </font>
              </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="text">
               <string>Сохранять &quot;модель прибора&quot;</string>
              </property>
@@ -1727,6 +1793,9 @@ QComboBox QAbstractItemView::item:selected {
                <pointsize>10</pointsize>
               </font>
              </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
              <property name="text">
               <string>Сохранять &quot;версия апп. прибора&quot;</string>
              </property>
@@ -1738,6 +1807,9 @@ QComboBox QAbstractItemView::item:selected {
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
              </property>
              <property name="text">
               <string>Включить защиту памяти &quot;Level1&quot;</string>
@@ -1752,7 +1824,7 @@ QComboBox QAbstractItemView::item:selected {
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>700</y>
+          <y>730</y>
           <width>75</width>
           <height>34</height>
          </rect>
@@ -1773,7 +1845,7 @@ QComboBox QAbstractItemView::item:selected {
         <property name="geometry">
          <rect>
           <x>450</x>
-          <y>700</y>
+          <y>730</y>
           <width>181</width>
           <height>34</height>
          </rect>
@@ -1795,7 +1867,7 @@ QComboBox QAbstractItemView::item:selected {
         <property name="geometry">
          <rect>
           <x>650</x>
-          <y>700</y>
+          <y>730</y>
           <width>121</width>
           <height>34</height>
          </rect>
@@ -1813,7 +1885,7 @@ QComboBox QAbstractItemView::item:selected {
          <string>Создать файл</string>
         </property>
        </widget>
-       <widget class="QLabel" name="lblUpdateRevision_2">
+       <widget class="QLabel" name="lblUpdateRevision">
         <property name="geometry">
          <rect>
           <x>20</x>
@@ -1847,6 +1919,9 @@ QComboBox QAbstractItemView::item:selected {
         </property>
         <property name="cursor">
          <cursorShape>ArrowCursor</cursorShape>
+        </property>
+        <property name="placeholderText">
+         <string>Выберите модель...</string>
         </property>
        </widget>
       </widget>

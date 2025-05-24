@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     expertModeCheckbox = new QCheckBox("Экспертный режим", ui->tabWidget);
+    expertModeCheckbox->setCursor(Qt::PointingHandCursor);
     ui->tabWidget->setCornerWidget(expertModeCheckbox, Qt::TopRightCorner);
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, [this](int /*index*/) {
         QTimer::singleShot(0, this, [this]() {
@@ -54,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->cmbUpdateDevModel, QOverload<int>::of(&QComboBox::currentIndexChanged), // DeviceModel/@name for Tab 2
             this, &MainWindow::handleUpdateDevModelNameComboBoxChanged);
 
-    // Unit1 connections ...
+    // Unit1 connect
     connect(ui->btnChooseProgramDataFile, &QPushButton::clicked, unit1, &Unit1::onBtnChooseProgramDataFileClicked);
     connect(ui->btnChooseLoaderFile, &QPushButton::clicked, unit1, &Unit1::onBtnChooseLoaderFileClicked);
     connect(ui->btnCreateFileManual, &QPushButton::clicked, unit1, &Unit1::onBtnCreateFileManualClicked);
@@ -66,7 +67,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnUploadCPU2, &QPushButton::clicked, unit1, &Unit1::onbtnUploadCPU2Clicked);
     connect(ui->btnEraseChip, &QPushButton::clicked, unit1, &Unit1::onBtnEraseChipClicked);
 
-    // Unit2 connections ...
+    // Unit2 connect
     connect(ui->btnChooseUpdateProgramDataFile, &QPushButton::clicked, unit2, &Unit2::onBtnChooseUpdateProgramDataFileClicked);
     connect(ui->btnUpdateCreateFileManual, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateCreateFileManualClicked);
     connect(ui->btnUpdateShowInfo, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateShowInfoClicked);
@@ -109,19 +110,21 @@ void MainWindow::onExpertModeToggled(bool checked)
     ui->grpUpdateParameters->setVisible(checked);
     ui->cmbDeviceModel->setVisible(checked);
     ui->cmbTargetMCU->setVisible(checked);
+    ui->logTextEdit->setVisible(checked);
 
     if (checked) {
         setFixedSize(expertSize);
-        ui->btnShowInfo->move(10, 700);
-        ui->btnCreateFileAuto->move(460, 700);
-        ui->btnCreateFileManual->move(650, 700);
+        ui->btnShowInfo->move(10, 731);
+        ui->btnCreateFileAuto->move(460, 731);
+        ui->btnCreateFileManual->move(650, 731);
         ui->grpParameters->move(10, 390);
-        ui->grpParameters->setFixedSize(761, 301);
-        ui->grpSerialNumbers->setFixedSize(341, 224);
-        ui->lblTotalFirmwareSize->move(10, 260);
-        ui->btnUpdateShowInfo->move(10, 700);
-        ui->btnUpdateCreateFileAuto->move(460, 700);
-        ui->btnUpdateCreateFileManual->move(650, 700);
+        ui->grpParameters->setFixedSize(761, 331);
+        ui->grpSerialNumbers->setFixedSize(340, 225);
+        ui->lblTotalFirmwareSize->move(10, 290);
+        ui->lblWhatWillUpload->move(10, 260);
+        ui->btnUpdateShowInfo->move(10, 731);
+        ui->btnUpdateCreateFileAuto->move(460, 731);
+        ui->btnUpdateCreateFileManual->move(650, 731);
 
     } else {
         setFixedSize(simpleSize);
@@ -130,8 +133,9 @@ void MainWindow::onExpertModeToggled(bool checked)
         ui->btnCreateFileManual->move(650, 370);
         ui->grpParameters->move(10, 100);
         ui->grpParameters->setFixedSize(761, 260);
-        ui->grpSerialNumbers->setFixedSize(341, 89);
+        ui->grpSerialNumbers->setFixedSize(340, 94);
         ui->lblTotalFirmwareSize->move(10, 220);
+        ui->lblWhatWillUpload->move(10, 190);
         ui->btnUpdateShowInfo->move(10, 370);
         ui->btnUpdateCreateFileAuto->move(460, 370);
         ui->btnUpdateCreateFileManual->move(650, 370);
@@ -378,7 +382,6 @@ void MainWindow::updateBldrDevModelDisplay(const QString& category) {
     ui->cmbDeviceModel->blockSignals(false);
 }
 
-
 void MainWindow::synchronizeComboBoxes(QObject* senderComboBoxObj) {
     QComboBox* senderComboBox = qobject_cast<QComboBox*>(senderComboBoxObj);
     if (!senderComboBox || senderComboBox->signalsBlocked()) {
@@ -530,9 +533,6 @@ void MainWindow::synchronizeComboBoxes(QObject* senderComboBoxObj) {
     qDebug() << Q_FUNC_INFO << "End.";
 }
 
-
-// ... (appendToLog, handle*ComboBoxChanged, findFirstCategoryForDeviceModelXmlName, updateUnit2UI, onExpertModeToggled, etc.)
-// onExpertModeToggled должен также управлять видимостью cmbDeviceModel (BldrDevModel)
 void MainWindow::appendToLog(const QString &message, bool isError)
 {
     if (!ui || !ui->logTextEdit) return;
@@ -541,18 +541,22 @@ void MainWindow::appendToLog(const QString &message, bool isError)
     bool effectivelyAnError = isError;
 
     if (isError && message.contains("The remote host closed the connection") && unit1 && unit1->wasShutdownCommandSent()) {
-        colorName = "gray"; // Или другой "не ошибочный" цвет
+        colorName = "gray";
         effectivelyAnError = false;
     } else if (isError) {
         colorName = "red";
     } else {
-        if (message.contains("Verified OK") || message.contains("успешно завершены") || message.contains("Programming Finished") || message.contains("Telnet соединение установлено") || message.contains("Examination succeed")) {
+        if (message.contains("Verified OK") || message.contains("успешно завершены") ||
+            message.contains("Programming Finished") ||
+            message.contains("Telnet соединение установлено") ||
+            message.contains("Examination succeed")) {
             colorName = "darkGreen";
         } else if (message.contains("[Telnet TX]")) {
             colorName = "purple";
         } else if (message.contains("Warn :")) {
             colorName = "orange";
-        } else if (message.startsWith("[OOCD ERR] Info :") || message.startsWith("[OOCD] Info :")) {
+        } else if (message.startsWith("[OOCD ERR] Info :") ||
+                   message.startsWith("[OOCD] Info :")) {
             colorName = "gray";
         } else {
             colorName = "navy";
@@ -575,7 +579,6 @@ void MainWindow::appendToLog(const QString &message, bool isError)
     ui->logTextEdit->moveCursor(QTextCursor::End);
     ui->logTextEdit->ensureCursorVisible();
 }
-
 
 void MainWindow::handleRevisionComboBoxChanged(int /*index*/) {
     synchronizeComboBoxes(sender());
@@ -606,7 +609,7 @@ QString MainWindow::findFirstCategoryForDeviceModelXmlName(const QString& device
             return "OthDev";
         }
     }
-    return ""; // Не найдено подходящих категорий
+    return "";
 }
 
 void MainWindow::updateUnit2UI(const QString& category) {

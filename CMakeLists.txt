@@ -27,11 +27,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         unit2.h unit2.cpp
         crcunit.h crcunit.cpp
         config_data.h
-
-
-
-
-
+        resources.qrc
 
     )
 # Define target properties for Android with Qt 6 as:

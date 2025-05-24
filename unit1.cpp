@@ -507,7 +507,8 @@ void Unit1::onBtnEraseChipClicked() {
                 m_isProgramming = false;
                 updateUploadButtonsState();
             } else {
-                emit logToInterface(QString("Команда стирания чипа для %1 отправлена. Предполагаемый успех. Завершение сессии OpenOCD.").arg(mcuFamily), false);
+                emit logToInterface(QString("Команда стирания чипа для %1 отправлена. Предполагаемый успех. Завершение сессии OpenOCD.")
+                                        .arg(mcuFamily), false);
                 m_animationTimer->stop();
                 ui->lblConnectionStatus->setText(QString("<font color='green'><b>Стирание<br> ОК</b></font>"));
                 statusTimer->start(3000);
@@ -612,7 +613,8 @@ void Unit1::onbtnUploadCPU1Clicked() {
 
     if (suffix.isEmpty() || !isAsciiSafeSuffix || suffix.length() > 4) {
         suffix = "bin";
-        emit logToInterface("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. Используется '.bin' для временного файла.", false);
+        emit logToInterface("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. "
+                            "Используется '.bin' для временного файла.", false);
     }
 
     QString simpleFileName = QString("fw_upload_%1.%2")
@@ -627,7 +629,8 @@ void Unit1::onbtnUploadCPU1Clicked() {
     }
     if (QFile::exists(temporaryFirmwarePath)) {
         if(!QFile::remove(temporaryFirmwarePath)){
-            emit logToInterface("Предупреждение: Не удалось удалить существующий одноименный временный файл перед копированием: " + temporaryFirmwarePath, true);
+            emit logToInterface("Предупреждение: Не удалось удалить существующий одноименный временный файл перед копированием: "
+                                    + temporaryFirmwarePath, true);
         }
     }
 
@@ -741,7 +744,8 @@ void Unit1::onbtnUploadCPU2Clicked() {
 
     if (suffix.isEmpty() || !isAsciiSafeSuffix || suffix.length() > 4) {
         suffix = "bin";
-        emit logToInterface("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. Используется '.bin' для временного файла.", false);
+        emit logToInterface("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. "
+                            "Используется '.bin' для временного файла.", false);
     }
 
     QString simpleFileName = QString("fw_upload_%1.%2")
@@ -756,7 +760,8 @@ void Unit1::onbtnUploadCPU2Clicked() {
     }
     if (QFile::exists(temporaryFirmwarePath)) {
         if(!QFile::remove(temporaryFirmwarePath)){
-            emit logToInterface("Предупреждение: Не удалось удалить существующий одноименный временный файл перед копированием: " + temporaryFirmwarePath, true);
+            emit logToInterface("Предупреждение: Не удалось удалить существующий одноименный временный файл перед копированием: "
+                                    + temporaryFirmwarePath, true);
         }
     }
 
@@ -837,7 +842,8 @@ void Unit1::onbtnUploadCPU2Clicked() {
 
             bool eraseErrorDetected = telnetOutput.contains("Error:", Qt::CaseInsensitive) ||
                                       telnetOutput.contains("failed", Qt::CaseInsensitive) ||
-                                      (telnetOutput.contains("invalid command", Qt::CaseInsensitive) && telnetOutput.contains(eraseCommandFirstWord, Qt::CaseInsensitive) );
+                                      (telnetOutput.contains("invalid command", Qt::CaseInsensitive) &&
+                                        telnetOutput.contains(eraseCommandFirstWord, Qt::CaseInsensitive) );
 
             if (eraseErrorDetected) {
                 emit logToInterface(QString("Ошибка во время стирания чипа (%1) перед программированием. Программирование отменено.").arg(mcuFamily), true);
@@ -857,7 +863,8 @@ void Unit1::onbtnUploadCPU2Clicked() {
                 return;
             }
 
-            emit logToInterface(QString("Стирание чипа (%1) успешно. Начало программирования файла: %2").arg(mcuFamily).arg(originalFileInfo.fileName()), false);
+            emit logToInterface(QString("Стирание чипа (%1) успешно. Начало программирования файла: %2")
+                                    .arg(mcuFamily).arg(originalFileInfo.fileName()), false);
 
             ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка\n...</b></font>");
             updateLoadingAnimation();
@@ -1575,9 +1582,13 @@ void Unit1::onBtnChooseProgramDataFileClicked()
 
     if (filePath.isEmpty()) return;
     QFileInfo fileInfo(filePath);
-    if (!fileInfo.exists() || !fileInfo.isFile()) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл не найден или недоступен.")); return; }
+    if (!fileInfo.exists() || !fileInfo.isFile()) { QMessageBox::critical(ui->cmbRevision->window(),
+                              tr("Ошибка"),
+                              tr("Файл не найден или недоступен.")); return; }
     qint64 size = fileInfo.size();
-    if (size > ((1024 - 16) * 1024)) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл больше максимально допустимого размера (1008 Кб)")); return; }
+    if (size > ((1024 - 16) * 1024)) { QMessageBox::critical(ui->cmbRevision->window(),
+                              tr("Ошибка"),
+                              tr("Файл больше максимально допустимого размера (1008 Кб)")); return; }
 
     ui->lblProgramDataFileName->setText( QDir::toNativeSeparators(filePath) );
 
@@ -1607,9 +1618,13 @@ void Unit1::onBtnChooseLoaderFileClicked()
     if (filePath.isEmpty()) return;
 
     QFileInfo fileInfo(filePath);
-    if (!fileInfo.exists() || !fileInfo.isFile()) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл не найден или недоступен.")); return; }
+    if (!fileInfo.exists() || !fileInfo.isFile()) { QMessageBox::critical(ui->cmbRevision->window(),
+                              tr("Ошибка"),
+                              tr("Файл не найден или недоступен.")); return; }
     qint64 size = fileInfo.size();
-    if (size > (16 * 1024)) { QMessageBox::critical(ui->cmbRevision->window(), tr("Ошибка"), tr("Файл больше максимально допустимого размера (16 Кб)")); return; }
+    if (size > (16 * 1024)) { QMessageBox::critical(ui->cmbRevision->window(),
+                              tr("Ошибка"),
+                              tr("Файл больше максимально допустимого размера (16 Кб)")); return; }
 
     ui->lblLoaderFileName->setText( QDir::toNativeSeparators(filePath) );
 
@@ -1642,10 +1657,12 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
     // Получаем пути из UI (могут быть относительными)
     QString programFilePathRel = ui->lblProgramDataFileName->text();
     QString loaderFilePathRel = ui->lblLoaderFileName->text();
-    if (programFilePathRel.startsWith("Файл:") || programFilePathRel.isEmpty() || programFilePathRel == "-") { QMessageBox::critical(ui->cmbRevision->window(),
-                              "Ошибка", "Файл программы не выбран."); return; }
-    if (loaderFilePathRel.startsWith("Файл:") || loaderFilePathRel.isEmpty() || loaderFilePathRel == "-") { QMessageBox::critical(ui->cmbRevision->window(),
-                              "Ошибка", "Файл загрузчика не выбран."); return; }
+    if (programFilePathRel.startsWith("Файл:") || programFilePathRel.isEmpty() || programFilePathRel == "-") {
+        QMessageBox::critical(ui->cmbRevision->window(),
+            "Ошибка", "Файл программы не выбран."); return; }
+    if (loaderFilePathRel.startsWith("Файл:") || loaderFilePathRel.isEmpty() || loaderFilePathRel == "-") {
+        QMessageBox::critical(ui->cmbRevision->window(),
+            "Ошибка", "Файл загрузчика не выбран."); return; }
 
     QString currentDir = QDir::currentPath();
     QString programFilePathAbs = QDir(currentDir).filePath(programFilePathRel);
@@ -1684,12 +1701,15 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
     const qsizetype actualDataSize = loaderMaxSize + qsizetype(programData.size());
 
     // Проверки смещений
-    if (actualDataSize > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(),
-                              "Ошибка", QString("Общий размер прошивки (%1 байт) превышает максимальный размер буфера (%2 байт).").arg(actualDataSize).arg(firmwareBufferSize)); return; }
-    if (progInfoOffset + qsizetype(sizeof(ProgInfo_Original)) > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(),
-                              "Ошибка", "Смещение таблицы ProgInfo выходит за пределы буфера."); return; }
+    if (actualDataSize > firmwareBufferSize) {
+        QMessageBox::critical(ui->cmbRevision->window(),
+            "Ошибка", QString("Общий размер прошивки (%1 байт) превышает максимальный размер буфера (%2 байт).")
+                .arg(actualDataSize).arg(firmwareBufferSize)); return; }
+    if (progInfoOffset + qsizetype(sizeof(ProgInfo_Original)) > firmwareBufferSize) {
+        QMessageBox::critical(ui->cmbRevision->window(),
+            "Ошибка", "Смещение таблицы ProgInfo выходит за пределы буфера."); return; }
     if (serialNumberOffset + serialNumberBlockSize > firmwareBufferSize) { QMessageBox::critical(ui->cmbRevision->window(),
-                              "Ошибка", "Смещение серийного номера выходит за пределы буфера."); return; }
+            "Ошибка", "Смещение серийного номера выходит за пределы буфера."); return; }
 
     QByteArray baseFirmwareBuffer(firmwareBufferSize, '\xFF'); // Заполняем FF
     qsizetype loaderSizeToCopy = qMin((qsizetype)loaderData.size(), loaderMaxSize);
@@ -1825,18 +1845,19 @@ void Unit1::generateCRCTables(quint32* fwdTable, quint32* revTable)
 }
 
 /* Функция calculateReverseCRC из оригинала (если она нужна для чего-то еще)
-// Если она использовалась ТОЛЬКО в createFirmwareFiles, то она больше не нужна,
-// т.к. логика патча встроена в createFirmwareFiles.
-// quint32 Unit1::calculateReverseCRC(const QByteArray &data_with_placeholders, quint32 targetCRC, const quint32* revTable)
-// {
-//     quint32 desired = targetCRC ^ 0xFFFFFFFF;
-//     const unsigned char* bufferPtr = reinterpret_cast<const unsigned char*>(data_with_placeholders.constData());
-//     int size = data_with_placeholders.size(); // data + 4 placeholders
-//     for(int i = size - 1; i >= 0; --i) {
-//         desired = (desired << 8) ^ revTable[(desired >> 24) ^ bufferPtr[i]];
-//     }
-//     return desired;
-} */
+    Если она использовалась ТОЛЬКО в createFirmwareFiles, то она больше не нужна,
+    т.к. логика патча встроена в createFirmwareFiles.
+
+    quint32 Unit1::calculateReverseCRC(const QByteArray &data_with_placeholders, quint32 targetCRC, const quint32* revTable)
+    {
+        quint32 desired = targetCRC ^ 0xFFFFFFFF;
+        const unsigned char* bufferPtr = reinterpret_cast<const unsigned char*>(data_with_placeholders.constData());
+        int size = data_with_placeholders.size(); // data + 4 placeholders
+        for(int i = size - 1; i >= 0; --i) {
+            desired = (desired << 8) ^ revTable[(desired >> 24) ^ bufferPtr[i]];
+        }
+        return desired;
+    } */
 
 QByteArray Unit1::loadFile(const QString &filePath)
 {
