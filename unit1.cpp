@@ -111,7 +111,7 @@ Unit1::~Unit1()
 
 void Unit1::logFilteredMessage(const QString& originalMessage, bool isError) {
     QString cleanedMessage = originalMessage;
-    cleanedMessage.replace(QChar(0xFFFD), QChar(' '));
+    cleanedMessage.remove(QChar(0xFFFD));
     emit logToInterface(cleanedMessage, isError);
 }
 
