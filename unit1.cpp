@@ -78,7 +78,7 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
     m_autoDetectTimeoutTimer->setSingleShot(true);
     connect(m_autoDetectTimeoutTimer, &QTimer::timeout, this, [&, this]() {
         if (m_isAttemptingAutoDetect) {
-            emit logToInterface("Тайм-аут автоопределения MCU. Остановка OpenOCD.", true);
+            logFilteredMessage("Тайм-аут автоопределения MCU. Остановка OpenOCD.", true);
             if (m_openOcdProcess && m_openOcdProcess->state() != QProcess::NotRunning) {
                 m_openOcdProcess->blockSignals(true);
                 m_openOcdProcess->terminate();
@@ -98,6 +98,7 @@ Unit1::Unit1(Ui::MainWindow *ui, QObject *parent)
             updateUploadButtonsState();
         }
     });
+    m_criticalHaltErrorOccurredDuringProgramming = false;
 
     updateUploadButtonsState();
 }
@@ -108,37 +109,43 @@ Unit1::~Unit1()
     cleanupTemporaryFile();
 }
 
+void Unit1::logFilteredMessage(const QString& originalMessage, bool isError) {
+    QString cleanedMessage = originalMessage;
+    cleanedMessage.replace(QChar(0xFFFD), QChar(' '));
+    emit logToInterface(cleanedMessage, isError);
+}
+
 // ----------------------- Интеграция OpenOCD
 
 bool Unit1::checkOpenOcdPrerequisites(const QString& targetScriptPath) {
     if (!QFile::exists(m_openOcdExecutablePath)) {
         QString expectedParentFolder = QDir(m_openOcdDir).dirName();
-        emit logToInterface("Критическая ошибка: Исполняемый файл OpenOCD не найден по пути: " + m_openOcdExecutablePath, true);
-        emit logToInterface("Убедитесь, что папка '" + expectedParentFolder + "' со всеми необходимыми файлами OpenOCD "
+        logFilteredMessage("Критическая ошибка: Исполняемый файл OpenOCD не найден по пути: " + m_openOcdExecutablePath, true);
+        logFilteredMessage("Убедитесь, что папка '" + expectedParentFolder + "' со всеми необходимыми файлами OpenOCD "
                                                                               "(включая подпапку 'bin') находится рядом с программой.", true);
         return false;
     }
 
     if (!QDir(m_openOcdScriptsPath).exists()) {
-        emit logToInterface("Критическая ошибка: Папка со скриптами OpenOCD не найдена: " + m_openOcdScriptsPath, true);
-        emit logToInterface("Ожидаемая структура: папка_программы/" + QDir(m_openOcdDir).dirName() + "/scripts/", true);
+        logFilteredMessage("Критическая ошибка: Папка со скриптами OpenOCD не найдена: " + m_openOcdScriptsPath, true);
+        logFilteredMessage("Ожидаемая структура: папка_программы/" + QDir(m_openOcdDir).dirName() + "/scripts/", true);
         return false;
     }
 
     QString fullInterfaceScriptPath = QDir(m_openOcdScriptsPath).filePath(m_interfaceScript);
     if (m_interfaceScript.isEmpty() || !QFile::exists(fullInterfaceScriptPath)) {
-        emit logToInterface("Критическая ошибка: Файл скрипта интерфейса не найден: " + fullInterfaceScriptPath, true);
+        logFilteredMessage("Критическая ошибка: Файл скрипта интерфейса не найден: " + fullInterfaceScriptPath, true);
         return false;
     }
 
     if (targetScriptPath.isEmpty()) {
-        emit logToInterface("Ошибка: Путь к скрипту цели не предоставлен для проверки.", true);
+        logFilteredMessage("Ошибка: Путь к скрипту цели не предоставлен для проверки.", true);
         return false;
     }
 
     QString fullTargetScriptPath = QDir(m_openOcdScriptsPath).filePath(targetScriptPath);
     if (!QFile::exists(fullTargetScriptPath)) {
-        emit logToInterface("Критическая ошибка: Выбранный файл скрипта цели не найден: " + fullTargetScriptPath, true);
+        logFilteredMessage("Критическая ошибка: Выбранный файл скрипта цели не найден: " + fullTargetScriptPath, true);
         return false;
     }
 
@@ -166,9 +173,9 @@ QString Unit1::getSafeTemporaryDirectoryBasePath() {
 
 #ifdef Q_OS_WIN
     basePath = QDir::tempPath();
-    emit logToInterface("Windows: Проверка системного TEMP пути: " + basePath, false);
+    logFilteredMessage("Windows: Проверка системного TEMP пути: " + basePath, false);
     basePath = winGetShortPathName(basePath);
-    emit logToInterface("Windows: Короткая версия TEMP пути: " + basePath, false);
+    logFilteredMessage("Windows: Короткая версия TEMP пути: " + basePath, false);
 
     isAsciiPath = true;
     for (const QChar &ch : basePath) {
@@ -178,18 +185,18 @@ QString Unit1::getSafeTemporaryDirectoryBasePath() {
         }
     }
     if (!isAsciiPath) {
-        emit logToInterface("Windows: Короткий TEMP путь все еще содержит не-ASCII: " + basePath + ". Попытка других вариантов.", true);
+        logFilteredMessage("Windows: Короткий TEMP путь все еще содержит не-ASCII: " + basePath + ". Попытка других вариантов.", true);
         basePath.clear();
     } else {
-        emit logToInterface("Windows: Используется TEMP путь (короткий/ASCII): " + basePath, false);
+        logFilteredMessage("Windows: Используется TEMP путь (короткий/ASCII): " + basePath, false);
     }
 
     if (basePath.isEmpty()) {
         QString cacheLocation = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
         if (!cacheLocation.isEmpty()) {
-            emit logToInterface("Windows: Проверка CacheLocation пути: " + cacheLocation, false);
+            logFilteredMessage("Windows: Проверка CacheLocation пути: " + cacheLocation, false);
             basePath = winGetShortPathName(cacheLocation);
-            emit logToInterface("Windows: Короткая версия CacheLocation: " + basePath, false);
+            logFilteredMessage("Windows: Короткая версия CacheLocation: " + basePath, false);
             isAsciiPath = true;
             for (const QChar &ch : basePath) {
                 if (ch.unicode() > 127) {
@@ -198,26 +205,26 @@ QString Unit1::getSafeTemporaryDirectoryBasePath() {
                 }
             }
             if (!isAsciiPath) {
-                emit logToInterface("Windows: Короткий CacheLocation путь содержит не-ASCII: " + basePath + ". Попытка других вариантов.", true);
+                logFilteredMessage("Windows: Короткий CacheLocation путь содержит не-ASCII: " + basePath + ". Попытка других вариантов.", true);
                 basePath.clear();
             } else {
-                emit logToInterface("Windows: Используется CacheLocation (короткий/ASCII): " + basePath, false);
+                logFilteredMessage("Windows: Используется CacheLocation (короткий/ASCII): " + basePath, false);
             }
         }
     }
 #else
     basePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    emit logToInterface("Linux/Other: Проверка CacheLocation пути: " + basePath, false);
+    logFilteredMessage("Linux/Other: Проверка CacheLocation пути: " + basePath, false);
     if (basePath.isEmpty()) {
-        emit logToInterface("Linux/Other: CacheLocation не найден, используем системный temp.", true);
+        logFilteredMessage("Linux/Other: CacheLocation не найден, используем системный temp.", true);
         basePath = QDir::tempPath();
-        emit logToInterface("Linux/Other: Используется системный temp путь: " + basePath, false);
+        logFilteredMessage("Linux/Other: Используется системный temp путь: " + basePath, false);
     }
     isAsciiPath = true;
 #endif
 
     if (basePath.isEmpty()) {
-        emit logToInterface("КРИТИЧЕСКАЯ ОШИБКА: Не удалось определить подходящий базовый каталог для временных файлов.", true);
+        logFilteredMessage("КРИТИЧЕСКАЯ ОШИБКА: Не удалось определить подходящий базовый каталог для временных файлов.", true);
         return QString();
     }
 
@@ -227,7 +234,7 @@ QString Unit1::getSafeTemporaryDirectoryBasePath() {
 
 #ifdef Q_OS_WIN
     if (!isAsciiPath) {
-        emit logToInterface("КРИТИЧЕСКАЯ ОШИБКА: Не удалось найти ASCII-совместимый базовый путь для временных файлов на Windows.", true);
+        logFilteredMessage("КРИТИЧЕСКАЯ ОШИБКА: Не удалось найти ASCII-совместимый базовый путь для временных файлов на Windows.", true);
         return QString();
     }
 #endif
@@ -241,10 +248,10 @@ bool Unit1::ensureDirectoryExists(const QString& path) {
         return true;
     }
     if (!dir.mkpath(".")) {
-        emit logToInterface("КРИТИЧЕСКАЯ ОШИБКА: Не удалось создать каталог: " + path, true);
+        logFilteredMessage("КРИТИЧЕСКАЯ ОШИБКА: Не удалось создать каталог: " + path, true);
         return false;
     }
-    emit logToInterface("Каталог успешно создан: " + path, false);
+    logFilteredMessage("Каталог успешно создан: " + path, false);
     return true;
 }
 
@@ -252,7 +259,7 @@ bool Unit1::ensureDirectoryExists(const QString& path) {
 
 void Unit1::startOpenOcdForAutoDetect() {
     if (!QFile::exists(m_openOcdExecutablePath) || !QDir(m_openOcdScriptsPath).exists() || m_interfaceScript.isEmpty()) {
-        emit logToInterface("Критическая ошибка: Отсутствуют базовые файлы OpenOCD или скрипт интерфейса для автоопределения.", true);
+        logFilteredMessage("Критическая ошибка: Отсутствуют базовые файлы OpenOCD или скрипт интерфейса для автоопределения.", true);
         m_isAttemptingAutoDetect = false;
         m_isConnecting = false;
         m_animationTimer->stop();
@@ -265,7 +272,7 @@ void Unit1::startOpenOcdForAutoDetect() {
     }
     QString fullInterfaceScriptPath = QDir(m_openOcdScriptsPath).filePath(m_interfaceScript);
     if (!QFile::exists(fullInterfaceScriptPath)) {
-        emit logToInterface("Критическая ошибка: Файл скрипта интерфейса '"+fullInterfaceScriptPath+"' не найден.", true);
+        logFilteredMessage("Критическая ошибка: Файл скрипта интерфейса '"+fullInterfaceScriptPath+"' не найден.", true);
         return;
     }
 
@@ -274,7 +281,7 @@ void Unit1::startOpenOcdForAutoDetect() {
         m_detectedTargetScript.clear();
     }
 
-    emit logToInterface("!! Запуск OpenOCD для автоопределения MCU (с stm32l4x.cfg как базой и чтением IDCODE)...", false);
+    logFilteredMessage("!! Запуск OpenOCD для автоопределения MCU (с stm32l4x.cfg как базой и чтением IDCODE)...", false);
 
     QStringList arguments;
     arguments << "-s" << QDir::toNativeSeparators(m_openOcdScriptsPath);
@@ -288,7 +295,7 @@ void Unit1::startOpenOcdForAutoDetect() {
     arguments << "-c" << "echo \"IDCODE_VALUE: $MY_IDCODE\"";
     arguments << "-c" << "shutdown";
 
-    emit logToInterface("Команда запуска для автоопределения: " + m_openOcdExecutablePath + " " + arguments.join(" "), false);
+    logFilteredMessage("Команда запуска для автоопределения: " + m_openOcdExecutablePath + " " + arguments.join(" "), false);
 
     m_openOcdProcess->setWorkingDirectory(m_openOcdDir);
     m_autoDetectTimeoutTimer->start(10000);
@@ -304,7 +311,7 @@ void Unit1::proceedWithConnection(const QString& targetScript) {
     m_isProgramming = false;
     m_receivedTelnetData.clear();
 
-    emit logToInterface("!! Запуск OpenOCD и попытка подключения к " + targetScript, false);
+    logFilteredMessage("!! Запуск OpenOCD и попытка подключения к " + targetScript, false);
 
     QString mcuNameForStatus = QFileInfo(targetScript).baseName(); // stm32l4x или stm32f3x
     ui->lblConnectionStatus->setText(QString("<font color='blue'><b>Подключение\n%1...</b></font>").arg(mcuNameForStatus));
@@ -323,7 +330,7 @@ void Unit1::proceedWithConnection(const QString& targetScript) {
     arguments << "-f" << targetScript;
     arguments << "-c" << "adapter speed 1000";
 
-    emit logToInterface("Команда запуска: " + m_openOcdExecutablePath + " " + arguments.join(" "), false);
+    logFilteredMessage("Команда запуска: " + m_openOcdExecutablePath + " " + arguments.join(" "), false);
 
     m_openOcdProcess->setWorkingDirectory(m_openOcdDir);
     m_openOcdProcess->start(m_openOcdExecutablePath, arguments);
@@ -344,7 +351,7 @@ void Unit1::processOpenOcdOutputForDetection(const QString& output) {
         if (ok) {
             uint dev_id = rawIdcode & 0x00000FFF; // Извлекаем DEV_ID (младшие 12 бит)
 
-            emit logToInterface(QString("Автоопределение: Прочитан DBGMCU_IDCODE=0x%1, DEV_ID=0x%2")
+            logFilteredMessage(QString("Автоопределение: Прочитан DBGMCU_IDCODE=0x%1, DEV_ID=0x%2")
                                     .arg(rawIdcode, 8, 16, QChar('0'))
                                     .arg(dev_id, 3, 16, QChar('0')), false);
             qDebug() << "Parsed DEV_ID:" << QString("0x%1").arg(dev_id, 0, 16);
@@ -359,7 +366,7 @@ void Unit1::processOpenOcdOutputForDetection(const QString& output) {
             };
 
             const QList<uint> f3_dev_ids = {
-                0x414, // STM32F303xB/C (старые?), STM32F302xB/C?
+                0x414, // STM32F303xB/C, STM32F302xB/C
                 0x422, // STM32F303x6/8, STM32F303xB/C, STM32F303xD/E, STM32F398xx, STM32F328xx, STM32F358xx
                 0x431, // STM32F302xDxE?
                 0x432, // STM32F373xx, STM32F378xx
@@ -375,23 +382,23 @@ void Unit1::processOpenOcdOutputForDetection(const QString& output) {
 
             if (l4_dev_ids.contains(dev_id)) {
                 m_detectedTargetScript = "target/stm32l4x.cfg";
-                emit logToInterface("Автоопределение: Определен STM32L4x по DEV_ID.", false);
+                logFilteredMessage("Автоопределение: Определен STM32L4x по DEV_ID.", false);
                 qDebug() << "Detected as L4";
                 m_autoDetectTimeoutTimer->stop();
             } else if (f3_dev_ids.contains(dev_id)) {
                 m_detectedTargetScript = "target/stm32f3x.cfg";
-                emit logToInterface("Автоопределение: Определен STM32F3x по DEV_ID.", false);
+                logFilteredMessage("Автоопределение: Определен STM32F3x по DEV_ID.", false);
                 qDebug() << "Detected as F3";
                 m_autoDetectTimeoutTimer->stop();
             } else {
-                emit logToInterface(QString("Автоопределение: Неизвестный DEV_ID 0x%1. Не удалось определить тип MCU.").arg(dev_id, 3, 16, QChar('0')), true);
+                logFilteredMessage(QString("Автоопределение: Неизвестный DEV_ID 0x%1. Не удалось определить тип MCU.").arg(dev_id, 3, 16, QChar('0')), true);
                 qDebug() << "Unknown DEV_ID";
             }
         } else {
-            emit logToInterface("Автоопределение: Ошибка преобразования IDCODE в число: " + idcodeHexStr, true);
+            logFilteredMessage("Автоопределение: Ошибка преобразования IDCODE в число: " + idcodeHexStr, true);
         }
     } else if (output.contains("Can't read memory address", Qt::CaseInsensitive) || output.contains("failed to read memory", Qt::CaseInsensitive)) {
-        emit logToInterface("Автоопределение: Ошибка чтения IDCODE регистра. Убедитесь, что MCU подключен и отвечает.", true);
+        logFilteredMessage("Автоопределение: Ошибка чтения IDCODE регистра. Убедитесь, что MCU подключен и отвечает.", true);
     }
 }
 
@@ -402,14 +409,14 @@ void Unit1::onBtnConnectClicked() {
 
     if (m_isConnected) {
         ui->btnConnect->setEnabled(false);
-        emit logToInterface("Нажата кнопка 'Отключить'. Остановка OpenOCD...", false);
+        logFilteredMessage("Нажата кнопка 'Отключить'. Остановка OpenOCD...", false);
         ui->cmbTargetMCU->setCurrentIndex(-1);
         stopOpenOcd();
         return;
     }
 
     if (m_isOpenOcdRunning || m_isConnecting || m_isAttemptingAutoDetect) {
-        emit logToInterface("Процесс OpenOCD, подключения или автоопределения уже активен. Пожалуйста, подождите.", true);
+        logFilteredMessage("Процесс OpenOCD, подключения или автоопределения уже активен. Пожалуйста, подождите.", true);
         return;
     }
 
@@ -423,7 +430,7 @@ void Unit1::onBtnConnectClicked() {
     QString targetScriptFromCmb = ui->cmbTargetMCU->currentData().toString();
 
     if (targetScriptFromCmb.isEmpty()) {
-        emit logToInterface("MCU не выбран. Попытка автоопределения...", false);
+        logFilteredMessage("MCU не выбран. Попытка автоопределения...", false);
         m_isAttemptingAutoDetect = true;
 
         ui->lblConnectionStatus->setText("<font color='blue'><b>Определение\nMCU...</b></font>");
@@ -447,75 +454,194 @@ void Unit1::onBtnConnectClicked() {
 
 void Unit1::onBtnEraseChipClicked() {
     if (!m_isConnected) {
-        emit logToInterface("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
+        logFilteredMessage("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
+        if (m_isEraseBeforeProgramming) {
+            m_isProgramming = false;
+            m_isEraseBeforeProgramming = false;
+            updateUploadButtonsState();
+            cleanupTemporaryFile();
+        }
         return;
     }
-    if (m_isProgramming) {
-        emit logToInterface("Другая операция (программирование/стирание) уже выполняется.", true);
+    if (!m_isEraseBeforeProgramming && m_isProgramming) {
+        logFilteredMessage("Другая операция (стирание) уже выполняется.", true);
         return;
     }
 
     QString currentTargetScript = ui->cmbTargetMCU->currentData().toString();
     if (currentTargetScript.isEmpty()) {
-        emit logToInterface("Ошибка: Не выбран целевой MCU. Невозможно определить команду стирания.", true);
+        logFilteredMessage("Ошибка: Не выбран целевой MCU. Невозможно определить команду стирания.", true);
+        if (m_isEraseBeforeProgramming) {
+            m_isProgramming = false;
+            m_isEraseBeforeProgramming = false;
+            updateUploadButtonsState();
+            cleanupTemporaryFile();
+        }
         return;
     }
 
     QString mcuFamily = QFileInfo(currentTargetScript).baseName();
     if (mcuFamily.isEmpty() || !mcuFamily.startsWith("stm32")) {
-        emit logToInterface("Ошибка: Не удалось определить семейство MCU из скрипта: " + currentTargetScript, true);
+        logFilteredMessage("Ошибка: Не удалось определить семейство MCU из скрипта: " + currentTargetScript, true);
+        if (m_isEraseBeforeProgramming) {
+            m_isProgramming = false;
+            m_isEraseBeforeProgramming = false;
+            updateUploadButtonsState();
+            cleanupTemporaryFile();
+        }
         return;
     }
 
-    m_isProgramming = true;
-    m_shutdownCommandSent = false;
+    if (!m_isEraseBeforeProgramming) {
+        m_isProgramming = true;
+    }
 
-    emit logToInterface(QString("!! Начало стирания чипа для %1...").arg(mcuFamily), false);
-    ui->lblConnectionStatus->setText(QString("<font color='blue'><b>Стирание<br>%1...</b></font>").arg(mcuFamily.toUpper()));
+    if (m_isEraseBeforeProgramming) {
+        logFilteredMessage(QString("!! Этап 1: Стирание чипа для %1 перед программированием...").arg(mcuFamily), false);
+        ui->lblConnectionStatus->setText(QString("<font color='blue'><b>Стирание<br>(1/2)...</b></font>"));
+    } else {
+        logFilteredMessage(QString("!! Начало стирания чипа для %1...").arg(mcuFamily), false);
+        ui->lblConnectionStatus->setText(QString("<font color='blue'><b>Стирание<br>%1...</b></font>").arg(mcuFamily.toUpper()));
+    }
     ui->lblConnectionStatus->setVisible(true);
     m_animationFrame = -1;
-    if (!m_animationTimer->isActive()) {
+    if (m_animationTimer && !m_animationTimer->isActive()) {
         m_animationTimer->start();
     }
     updateLoadingAnimation();
-    statusTimer->stop();
-
+    if(statusTimer) statusTimer->stop();
     updateUploadButtonsState();
 
+    m_criticalHaltErrorOccurredDuringProgramming = false;
     m_receivedTelnetData.clear();
-    sendOpenOcdCommand("reset halt");
+    if (mcuFamily == "stm32f3x") {
+        sendOpenOcdCommand("reset");
+        sendOpenOcdCommand("stm32f3x.cpu arp_halt");
+    } else {
+        sendOpenOcdCommand("reset halt");
+    }
 
-    QTimer::singleShot(500, this, [this, mcuFamily]() {
-        if (!m_isProgramming) return;
+    QTimer::singleShot(2500, this, [this, mcuFamily]() { // Оставляем 2.5с
+        if (!m_isProgramming) {
+            if (m_isEraseBeforeProgramming) { cleanupTemporaryFile(); m_isEraseBeforeProgramming = false; }
+            return;
+        }
 
+        const QByteArray notHaltedError("Not halted");
+        const QByteArray timedOutWaitingError("timed out while waiting for target halted");
+
+        bool haltFailedInTelnetBuffer = m_receivedTelnetData.contains(notHaltedError) ||
+                                        m_receivedTelnetData.contains(timedOutWaitingError);
+
+        if (haltFailedInTelnetBuffer) {
+            logFilteredMessage("[ОШИБКА STAGE 1] Не удалось остановить CPU (halt) перед стиранием (обнаружено в буфере).", true);
+            if (m_animationTimer) m_animationTimer->stop();
+            ui->lblConnectionStatus->setText(QString("<font color='red'><b>Стирание<br>%1 ✗ (Halt Fail)</b></font>").arg(mcuFamily.toUpper()));
+            if (statusTimer) statusTimer->start(4000);
+
+            m_isProgramming = false;
+            m_criticalHaltErrorOccurredDuringProgramming = false;
+            if (m_isEraseBeforeProgramming) { cleanupTemporaryFile(); m_isEraseBeforeProgramming = false; }
+            updateUploadButtonsState();
+            m_receivedTelnetData.clear();
+            return;
+        }
+
+        logFilteredMessage("[DEBUG Erase] Ошибок halt в буфере не найдено. Отправка mass_erase.", false);
         QString eraseCommand = QString("%1 mass_erase 0").arg(mcuFamily);
-        emit logToInterface(QString("Отправка команды стирания: %1").arg(eraseCommand), false);
+        m_receivedTelnetData.clear(); // Очищаем буфер ПЕРЕД отправкой НОВОЙ команды
         sendOpenOcdCommand(eraseCommand);
 
-        QTimer::singleShot(10000, this, [this, mcuFamily]() {
-            if (!m_isProgramming) return;
+        QTimer::singleShot(10000, this, [this, mcuFamily, eraseCommand]() {
+            if (!m_isProgramming) {
+                if (m_isEraseBeforeProgramming) {
+                    cleanupTemporaryFile();
+                    m_isEraseBeforeProgramming = false;
+                }
+                return;
+            }
 
-            bool commandErrorDetected = m_receivedTelnetData.contains("Error:") ||
-                                        m_receivedTelnetData.contains("failed") ||
-                                        m_receivedTelnetData.contains("invalid command");
+            const QByteArray errorStr("Error:");
+            const QByteArray failedStr("failed");
+            const QByteArray invalidCmdStr("invalid command");
+            const QByteArray eraseCmdFirstWord = eraseCommand.split(" ").first().toUtf8();
+            const QByteArray notHaltedAfterEraseError("Target not halted");
+
+            bool commandErrorDetected = m_receivedTelnetData.contains(notHaltedAfterEraseError) ||
+                                        m_receivedTelnetData.contains(errorStr) ||
+                                        m_receivedTelnetData.contains(failedStr) ||
+                                        (m_receivedTelnetData.contains(invalidCmdStr) &&
+                                         m_receivedTelnetData.contains(eraseCmdFirstWord));
 
             if (commandErrorDetected) {
-                emit logToInterface(QString("Ошибка во время выполнения команды стирания для %1. Проверьте логи OpenOCD.").arg(mcuFamily), true);
-                m_animationTimer->stop();
+                logFilteredMessage(QString("Ошибка во время стирания чипа (%1). Программирование отменено.").arg(mcuFamily), true);
+                if (m_animationTimer) m_animationTimer->stop();
                 ui->lblConnectionStatus->setText(QString("<font color='red'><b>Стирание<br>%1 ✗</b></font>").arg(mcuFamily.toUpper()));
-                statusTimer->start(4000);
+                if (statusTimer) statusTimer->start(4000);
+
                 m_isProgramming = false;
+                m_criticalHaltErrorOccurredDuringProgramming = false;
+                if (m_isEraseBeforeProgramming) {
+                    cleanupTemporaryFile();
+                    m_isEraseBeforeProgramming = false;
+                }
                 updateUploadButtonsState();
             } else {
-                emit logToInterface(QString("Команда стирания чипа для %1 отправлена. Предполагаемый успех. Завершение сессии OpenOCD.")
-                                        .arg(mcuFamily), false);
-                m_animationTimer->stop();
-                ui->lblConnectionStatus->setText(QString("<font color='green'><b>Стирание<br> ОК</b></font>"));
-                statusTimer->start(3000);
+                logFilteredMessage(QString("Стирание чипа (%1) успешно.").arg(mcuFamily), false);
+                if (m_isEraseBeforeProgramming) {
+                    proceedToProgrammingAfterErase();
+                } else {
+                    if (m_animationTimer) m_animationTimer->stop();
+                    ui->lblConnectionStatus->setText(QString("<font color='green'><b>Стирание<br>%1 ОК</b></font>").arg(mcuFamily.toUpper()));
+                    if (statusTimer) statusTimer->start(3000);
+                    sendOpenOcdCommand("reset");
+                    m_isProgramming = false;
+                    m_criticalHaltErrorOccurredDuringProgramming = false;
+                    updateUploadButtonsState();
+                }
             }
-            m_isProgramming = false;
-            updateUploadButtonsState();
         });
+    });
+}
+
+void Unit1::proceedToProgrammingAfterErase() {
+    if (!m_isProgramming || !m_isEraseBeforeProgramming) {
+        logFilteredMessage("Отмена программирования после стирания (неверное состояние).", true);
+        m_isProgramming = false;
+        m_isEraseBeforeProgramming = false;
+        updateUploadButtonsState();
+        cleanupTemporaryFile();
+        return;
+    }
+
+    logFilteredMessage(QString("!! Этап 2: Начало программирования файла: %1").arg(m_originalFileNameForDelayedProgramming), false);
+
+    ui->lblConnectionStatus->setText(QString("<font color='blue'><b>Прошивка<br>(2/2)...</b></font>"));
+    m_animationFrame = -1;
+    if (m_animationTimer && !m_animationTimer->isActive()) {
+        m_animationTimer->start();
+    }
+    updateLoadingAnimation();
+
+    m_receivedTelnetData.clear();
+    QString mcuFamily = QFileInfo(ui->cmbTargetMCU->currentData().toString()).baseName();
+    if (mcuFamily == "stm32f3x") {
+        sendOpenOcdCommand("stm32f3x.cpu arp_halt");
+    } else {
+        sendOpenOcdCommand("reset halt");
+    }
+
+    QTimer::singleShot(200, this, [this]() {
+        if (!m_isProgramming) {
+            if (m_isEraseBeforeProgramming) {
+                cleanupTemporaryFile();
+                m_isEraseBeforeProgramming = false;
+            }
+            return;
+        }
+        QString programCmd = QString("program \"%1\" %2 verify reset").arg(m_firmwarePathForDelayedProgramming).arg(m_firmwareAddressForDelayedProgramming);
+        logFilteredMessage(QString("Отправка команды программирования: %1").arg(programCmd), false);
+        sendOpenOcdCommand(programCmd);
     });
 }
 
@@ -542,7 +668,7 @@ void Unit1::updateUploadButtonsState() {
             cpu1Enabled = false;
             cpu2Enabled = false;
             if (!targetScript.isEmpty()){
-                emit logToInterface("Предупреждение: Неизвестный тип MCU для правил кнопок: " + targetScript, true);
+                logFilteredMessage("Предупреждение: Неизвестный тип MCU для правил кнопок: " + targetScript, true);
             }
         }
     }
@@ -552,40 +678,103 @@ void Unit1::updateUploadButtonsState() {
     if(ui->btnEraseChip) ui->btnEraseChip->setEnabled(eraseEnabled);
 }
 
+QString Unit1::predictAutoCreatedFilePath(const QString& outputDir, const QString& revisionCategory, int serialNumber) {
+    if (outputDir.isEmpty() || revisionCategory.isEmpty() || serialNumber <= 0) {
+        return QString();
+    }
+
+    QString baseName = revisionCategory;
+    if (baseName.isEmpty() || baseName == "OthDev") {
+        baseName = "Firmware";
+    }
+    baseName.replace(QRegularExpression(R"([\\/:*?"<>|])"), "_");
+
+    QString serialStr = QString::number(serialNumber);
+    QString fileName = QString("%1-Ldr+Prog-sn-%2.bin").arg(baseName).arg(serialStr);
+
+    QDir dir(outputDir);
+    return dir.filePath(fileName);
+}
+
 void Unit1::onbtnUploadCPU1Clicked() {
     if (!m_isConnected) {
-        emit logToInterface("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
+        logFilteredMessage("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
         return;
     }
     if (m_isProgramming) {
-        emit logToInterface("Программирование уже выполняется.", true);
+        logFilteredMessage("Другая операция (программирование/стирание) уже выполняется.", true);
         return;
     }
 
-    QString originalFirmwarePath;
+    QString firmwareToUploadPath;
+    QFileInfo firmwareFileInfo;
 
+    bool autoCreateSuccess = false;
+    QString selectedRevisionCategory = ui->cmbRevision->currentText();
+
+    if (!selectedRevisionCategory.isEmpty() && selectedRevisionCategory != "OthDev" &&
+        revisionsMap.contains(selectedRevisionCategory) && !revisionsMap[selectedRevisionCategory].SaveFirmware.isEmpty())
+    {
+        logFilteredMessage("Попытка автоматического создания файла прошивки для ревизии: " + selectedRevisionCategory, false);
+        QString autoSaveDirRelative = revisionsMap[selectedRevisionCategory].SaveFirmware;
+        QString autoSaveDirAbsolute = QDir(QCoreApplication::applicationDirPath()).filePath(autoSaveDirRelative);
+        QString serialBeginStr = ui->editInitialSerialNumber->text().trimmed();
+        bool serialOk;
+        int serialBegin = serialBeginStr.toInt(&serialOk);
+
+        if (!serialOk || serialBegin <= 0) {
+            logFilteredMessage("Для автосоздания файла не указан корректный начальный серийный номер.", true);
+        } else {
+            QString originalSerialCount = ui->editNumberOfSerials->text();
+            ui->editNumberOfSerials->setText("1");
+            createFirmwareFiles(autoSaveDirAbsolute, false);
+            ui->editNumberOfSerials->setText(originalSerialCount);
+            QString predictedPath = predictAutoCreatedFilePath(autoSaveDirAbsolute, selectedRevisionCategory, serialBegin);
+
+            if (!predictedPath.isEmpty() && QFile::exists(predictedPath)) {
+                firmwareToUploadPath = predictedPath;
+                autoCreateSuccess = true;
+                logFilteredMessage("Файл автоматически создан и выбран: " + firmwareToUploadPath, false);
+            } else {
+                logFilteredMessage("Автоматическое создание файла было запущено, но ожидаемый файл не найден по пути: " + predictedPath, true);
+            }
+        }
+    } else {
+        logFilteredMessage("Условия для автоматического создания файла не выполнены (ревизия не выбрана, OthDev, или нет пути автосохранения).", false);
+    }
+
+    if (!autoCreateSuccess) {
+        logFilteredMessage("Переход к ручному выбору файла прошивки...", false);
+        QString originalManualPath;
 #ifdef Q_OS_WIN
-    QString CPU1dir = "\\Файл прошивки CPU1";
-    QString defaultDir = QCoreApplication::applicationDirPath() + CPU1dir;
+        QString CPU1dir = "\\Файл прошивки CPU1";
+        QString defaultDir = QCoreApplication::applicationDirPath() + CPU1dir;
 #else
-    QString CPU1dir = "/Файл прошивки CPU1";
-    QString defaultDir = "/opt/UpdateGenerator" + CPU1dir;
+        QString CPU1dir = "/Файл прошивки CPU1";
+        QString defaultDir = QCoreApplication::applicationDirPath() + CPU1dir;
 #endif
+        originalManualPath = QFileDialog::getOpenFileName(
+            nullptr,
+            tr("Выберите файл прошивки CPU1"),
+            defaultDir,
+            tr("Файлы прошивки (*.bin *.hex *.elf);;Все файлы (*.*)")
+            );
 
-    originalFirmwarePath = QFileDialog::getOpenFileName(
-        nullptr,
-        tr("Выберите файл прошивки CPU1"),
-        defaultDir,
-        tr("Файлы прошивки (*.bin *.hex *.elf);;Все файлы (*.*)")
-        );
+        if (originalManualPath.isEmpty()) {
+            logFilteredMessage("Ручной выбор файла отменен.", false);
+            return;
+        }
+        firmwareToUploadPath = originalManualPath;
+    }
 
-    if (originalFirmwarePath.isEmpty()) {
-        emit logToInterface("Выбор файла отменен.", false);
+    if (firmwareToUploadPath.isEmpty()) {
+        logFilteredMessage("Ошибка: Файл прошивки не был выбран или создан.", true);
         return;
     }
 
-    m_originalFirmwarePathForLog = originalFirmwarePath;
-    emit logToInterface("Выбран файл: " + originalFirmwarePath, false);
+    m_originalFirmwarePathForLog = firmwareToUploadPath;
+    logFilteredMessage("Выбран файл для загрузки: " + firmwareToUploadPath, false);
+    firmwareFileInfo.setFile(firmwareToUploadPath); // Инициализируем firmwareFileInfo здесь
 
     QString safeBaseDirPath = getSafeTemporaryDirectoryBasePath();
     if (safeBaseDirPath.isEmpty()) {
@@ -596,10 +785,9 @@ void Unit1::onbtnUploadCPU1Clicked() {
         m_currentSafeTempSubdirPath.clear();
         return;
     }
-    emit logToInterface("Временная подпапка для прошивок: " + m_currentSafeTempSubdirPath, false);
+    logFilteredMessage("Временная подпапка для прошивок: " + m_currentSafeTempSubdirPath, false);
 
-    QFileInfo originalFileInfo(originalFirmwarePath);
-    QString suffix = originalFileInfo.suffix().toLower();
+    QString suffix = firmwareFileInfo.suffix().toLower(); // Используем firmwareFileInfo, а не re-creating QFileInfo
     bool isAsciiSafeSuffix = true;
     if (!suffix.isEmpty()) {
         for (const QChar& c : suffix) {
@@ -609,92 +797,61 @@ void Unit1::onbtnUploadCPU1Clicked() {
             }
         }
     }
-
     if (suffix.isEmpty() || !isAsciiSafeSuffix || suffix.length() > 4) {
         suffix = "bin";
-        emit logToInterface("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. "
-                            "Используется '.bin' для временного файла.", false);
+        logFilteredMessage("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. Используется '.bin' для временного файла.", false);
     }
-
     QString simpleFileName = QString("fw_upload_%1.%2")
                                  .arg(QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz"))
                                  .arg(suffix);
-
     QString temporaryFirmwarePath = QDir(m_currentSafeTempSubdirPath).filePath(simpleFileName);
 
     if (!m_firmwareFilePathForUpload.isEmpty() && m_firmwareFilePathForUpload != temporaryFirmwarePath && QFile::exists(m_firmwareFilePathForUpload)) {
-        emit logToInterface("Удаление предыдущего временного файла: " + m_firmwareFilePathForUpload, false);
         QFile::remove(m_firmwareFilePathForUpload);
     }
     if (QFile::exists(temporaryFirmwarePath)) {
-        if(!QFile::remove(temporaryFirmwarePath)){
-            emit logToInterface("Предупреждение: Не удалось удалить существующий одноименный временный файл перед копированием: "
-                                    + temporaryFirmwarePath, true);
-        }
+        QFile::remove(temporaryFirmwarePath);
     }
-
-    if (!QFile::copy(originalFirmwarePath, temporaryFirmwarePath)) {
-        QFile sourceFile(originalFirmwarePath);
-        QFile destFile(temporaryFirmwarePath);
-        QString errorDetails = "Ошибка исходного файла: " + sourceFile.errorString() +
-                               ", Ошибка файла назначения: " + destFile.errorString();
-        emit logToInterface("Критическая ошибка: Не удалось скопировать файл прошивки из '" + originalFirmwarePath + "' в '" +
-                                temporaryFirmwarePath + "'. " + errorDetails, true);
+    if (!QFile::copy(firmwareToUploadPath, temporaryFirmwarePath)) {
+        logFilteredMessage("Критическая ошибка: Не удалось скопировать файл прошивки из '" + firmwareToUploadPath + "' в '" + temporaryFirmwarePath + "'.", true);
         return;
     }
-    emit logToInterface("Файл скопирован во временный: " + temporaryFirmwarePath, false);
     m_firmwareFilePathForUpload = temporaryFirmwarePath;
 
-    QString firmwarePathForOcd = QDir::fromNativeSeparators(m_firmwareFilePathForUpload);
-    firmwarePathForOcd.replace('\\', '/');
+    m_firmwarePathForDelayedProgramming = QDir::fromNativeSeparators(m_firmwareFilePathForUpload);
+    m_firmwarePathForDelayedProgramming.replace('\\', '/');
+    m_firmwareAddressForDelayedProgramming = m_firmwareAddress;
+    m_originalFileNameForDelayedProgramming = firmwareFileInfo.fileName();
 
     bool finalPathIsAscii = true;
-    for (const QChar &ch : firmwarePathForOcd) {
-        if (ch.unicode() > 127) {
-            finalPathIsAscii = false;
-            break;
-        }
+    for (const QChar &ch : m_firmwarePathForDelayedProgramming) {
+        if (ch.unicode() > 127) { finalPathIsAscii = false; break; }
     }
     if (!finalPathIsAscii) {
-        emit logToInterface("КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: Финальный путь для OpenOCD "
-                            "("+firmwarePathForOcd+") содержит не-ASCII символы! Программирование может не удасться.", true);
+        logFilteredMessage("КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: Финальный путь для OpenOCD ("+m_firmwarePathForDelayedProgramming+") содержит не-ASCII символы!", true);
     }
-    emit logToInterface("Путь для OpenOCD (проверен на ASCII): " + firmwarePathForOcd, false);
+    logFilteredMessage("Путь для OpenOCD (проверен на ASCII): " + m_firmwarePathForDelayedProgramming, false);
 
-    m_shutdownCommandSent = false;
     m_isProgramming = true;
-    emit logToInterface("!! Начало программирования (файл: " + originalFileInfo.fileName() + ")", false);
+    m_isEraseBeforeProgramming = true;
 
-    ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка\n...</b></font>");
-    ui->lblConnectionStatus->setVisible(true);
-    m_animationFrame = -1;
-    if (!m_animationTimer->isActive()) m_animationTimer->start();
-    updateLoadingAnimation();
-    statusTimer->stop();
-    if(ui->btnUploadCPU1) ui->btnUploadCPU1->setEnabled(false);
+    logFilteredMessage(QString("!! Начало программирования (файл: %1) с предварительным стиранием...")
+                            .arg(m_originalFileNameForDelayedProgramming), false);
 
-    m_receivedTelnetData.clear();
-    sendOpenOcdCommand("reset halt");
-    QTimer::singleShot(200, this, [this, firmwarePathForOcd]() {
-        if (m_isProgramming) {
-            QString programCmd = QString("program \"%1\" %2 verify reset").arg(firmwarePathForOcd).arg(m_firmwareAddress);
-            sendOpenOcdCommand(programCmd);
-        }
-    });
+    onBtnEraseChipClicked();
 }
 
 void Unit1::onbtnUploadCPU2Clicked() {
     if (!m_isConnected) {
-        emit logToInterface("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
+        logFilteredMessage("Ошибка: Устройство не подключено. Сначала нажмите 'Подключить'.", true);
         return;
     }
     if (m_isProgramming) {
-        emit logToInterface("Программирование или другая операция уже выполняется.", true);
+        logFilteredMessage("Другая операция (программирование/стирание) уже выполняется.", true);
         return;
     }
 
     QString originalFirmwarePath;
-
 #ifdef Q_OS_WIN
     QString CPU2dir = "\\Файл прошивки CPU2";
     QString defaultDir = QCoreApplication::applicationDirPath() + CPU2dir;
@@ -702,7 +859,6 @@ void Unit1::onbtnUploadCPU2Clicked() {
     QString CPU2dir = "/Файл прошивки CPU2";
     QString defaultDir = "/opt/UpdateGenerator" + CPU2dir;
 #endif
-
     originalFirmwarePath = QFileDialog::getOpenFileName(
         nullptr,
         tr("Выберите файл прошивки CPU2"),
@@ -711,12 +867,12 @@ void Unit1::onbtnUploadCPU2Clicked() {
         );
 
     if (originalFirmwarePath.isEmpty()) {
-        emit logToInterface("Выбор файла отменен.", false);
+        logFilteredMessage("Выбор файла отменен.", false);
         return;
     }
 
     m_originalFirmwarePathForLog = originalFirmwarePath;
-    emit logToInterface("Выбран файл: " + originalFirmwarePath, false);
+    logFilteredMessage("Выбран файл: " + originalFirmwarePath, false);
 
     QString safeBaseDirPath = getSafeTemporaryDirectoryBasePath();
     if (safeBaseDirPath.isEmpty()) {
@@ -727,7 +883,7 @@ void Unit1::onbtnUploadCPU2Clicked() {
         m_currentSafeTempSubdirPath.clear();
         return;
     }
-    emit logToInterface("Временная подпапка для прошивок: " + m_currentSafeTempSubdirPath, false);
+    logFilteredMessage("Временная подпапка для прошивок: " + m_currentSafeTempSubdirPath, false);
 
     QFileInfo originalFileInfo(originalFirmwarePath);
     QString suffix = originalFileInfo.suffix().toLower();
@@ -740,150 +896,48 @@ void Unit1::onbtnUploadCPU2Clicked() {
             }
         }
     }
-
     if (suffix.isEmpty() || !isAsciiSafeSuffix || suffix.length() > 4) {
         suffix = "bin";
-        emit logToInterface("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. "
-                            "Используется '.bin' для временного файла.", false);
+        logFilteredMessage("Предупреждение: Расширение оригинального файла некорректно или не ASCII-совместимо. Используется '.bin' для временного файла.", false);
     }
-
     QString simpleFileName = QString("fw_upload_%1.%2")
                                  .arg(QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz"))
                                  .arg(suffix);
-
     QString temporaryFirmwarePath = QDir(m_currentSafeTempSubdirPath).filePath(simpleFileName);
 
     if (!m_firmwareFilePathForUpload.isEmpty() && m_firmwareFilePathForUpload != temporaryFirmwarePath && QFile::exists(m_firmwareFilePathForUpload)) {
-        emit logToInterface("Удаление предыдущего временного файла: " + m_firmwareFilePathForUpload, false);
         QFile::remove(m_firmwareFilePathForUpload);
     }
     if (QFile::exists(temporaryFirmwarePath)) {
-        if(!QFile::remove(temporaryFirmwarePath)){
-            emit logToInterface("Предупреждение: Не удалось удалить существующий одноименный временный файл перед копированием: "
-                                    + temporaryFirmwarePath, true);
-        }
+        QFile::remove(temporaryFirmwarePath);
     }
-
     if (!QFile::copy(originalFirmwarePath, temporaryFirmwarePath)) {
-        QFile sourceFile(originalFirmwarePath);
-        QFile destFile(temporaryFirmwarePath);
-        QString errorDetails = "Ошибка исходного файла: " + sourceFile.errorString() +
-                               ", Ошибка файла назначения: " + destFile.errorString();
-        emit logToInterface("Критическая ошибка: Не удалось скопировать файл прошивки из '" + originalFirmwarePath + "' в '" +
-                                temporaryFirmwarePath + "'. " + errorDetails, true);
+        logFilteredMessage("Критическая ошибка: Не удалось скопировать файл прошивки из '" + originalFirmwarePath + "' в '" + temporaryFirmwarePath + "'.", true);
         return;
     }
-    emit logToInterface("Файл скопирован во временный: " + temporaryFirmwarePath, false);
     m_firmwareFilePathForUpload = temporaryFirmwarePath;
-
-    QString firmwarePathForOcd = QDir::fromNativeSeparators(m_firmwareFilePathForUpload);
-    firmwarePathForOcd.replace('\\', '/');
+    m_firmwarePathForDelayedProgramming = QDir::fromNativeSeparators(m_firmwareFilePathForUpload);
+    m_firmwarePathForDelayedProgramming.replace('\\', '/');
+    m_firmwareAddressForDelayedProgramming = m_firmwareAddress;
+    m_originalFileNameForDelayedProgramming = originalFileInfo.fileName();
 
     bool finalPathIsAscii = true;
-    for (const QChar &ch : firmwarePathForOcd) {
-        if (ch.unicode() > 127) {
-            finalPathIsAscii = false;
-            break;
-        }
+    for (const QChar &ch : m_firmwarePathForDelayedProgramming) {
+        if (ch.unicode() > 127) { finalPathIsAscii = false; break; }
     }
     if (!finalPathIsAscii) {
-        emit logToInterface("КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: Финальный путь для OpenOCD "
-                            "("+firmwarePathForOcd+") содержит не-ASCII символы! Программирование может не удасться.", true);
+        logFilteredMessage("КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: Финальный путь для OpenOCD ("+m_firmwarePathForDelayedProgramming+") содержит не-ASCII символы!", true);
     }
-    emit logToInterface("Путь для OpenOCD (проверен на ASCII): " + firmwarePathForOcd, false);
+    logFilteredMessage("Путь для OpenOCD (проверен на ASCII): " + m_firmwarePathForDelayedProgramming, false);
 
-    m_shutdownCommandSent = false;
     m_isProgramming = true;
+    m_isEraseBeforeProgramming = true;
 
-    emit logToInterface("!! Начало стирания чипа перед программированием...", false);
-    ui->lblConnectionStatus->setText("<font color='blue'><b>Стирание<br>...</b></font>");
-    ui->lblConnectionStatus->setVisible(true);
-    m_animationFrame = -1;
-    if (!m_animationTimer->isActive()) m_animationTimer->start();
-    updateLoadingAnimation();
-    statusTimer->stop();
-    updateUploadButtonsState();
+    logFilteredMessage(QString("!! Начало программирования CPU2 (файл: %1) с предварительным стиранием...")
+                            .arg(m_originalFileNameForDelayedProgramming), false);
 
-    QString currentTargetScript = ui->cmbTargetMCU->currentData().toString();
-    QString mcuFamily;
-    if (!currentTargetScript.isEmpty()) {
-        mcuFamily = QFileInfo(currentTargetScript).baseName();
-    }
-    if (mcuFamily.isEmpty() || !mcuFamily.startsWith("stm32")) {
-        emit logToInterface("Ошибка: Не удалось определить семейство MCU для стирания перед программированием.", true);
-        m_isProgramming = false;
-        updateUploadButtonsState();
-        cleanupTemporaryFile();
-        return;
-    }
-
-    m_receivedTelnetData.clear();
-    sendOpenOcdCommand("reset halt");
-
-    QTimer::singleShot(200, this, [this, mcuFamily, firmwarePathForOcd, originalFileInfo]() {
-        if (!m_isProgramming) {
-            cleanupTemporaryFile();
-            return;
-        }
-
-        QString eraseCommand = QString("%1 mass_erase 0").arg(mcuFamily);
-        emit logToInterface(QString("Отправка команды стирания: %1").arg(eraseCommand), false);
-        sendOpenOcdCommand(eraseCommand);
-
-        QTimer::singleShot(5000, this, [this, firmwarePathForOcd, originalFileInfo, mcuFamily, eraseCommand]() {
-            if (!m_isProgramming) {
-                cleanupTemporaryFile();
-                return;
-            }
-
-            QString telnetOutput = QString::fromUtf8(m_receivedTelnetData);
-            QString eraseCommandFirstWord = eraseCommand.split(" ").first();
-
-            bool eraseErrorDetected = telnetOutput.contains("Error:", Qt::CaseInsensitive) ||
-                                      telnetOutput.contains("failed", Qt::CaseInsensitive) ||
-                                      (telnetOutput.contains("invalid command", Qt::CaseInsensitive) &&
-                                        telnetOutput.contains(eraseCommandFirstWord, Qt::CaseInsensitive) );
-
-            if (eraseErrorDetected) {
-                emit logToInterface(QString("Ошибка во время стирания чипа (%1) перед программированием. Программирование отменено.").arg(mcuFamily), true);
-                m_animationTimer->stop();
-                ui->lblConnectionStatus->setText(QString("<font color='red'><b>Стирание<br>%1 ✗</b></font>").arg(mcuFamily.toUpper()));
-                statusTimer->start(4000);
-                m_isProgramming = false;
-                updateUploadButtonsState();
-                cleanupTemporaryFile();
-
-                if (m_isOpenOcdRunning && m_telnetSocket && m_telnetSocket->state() == QAbstractSocket::ConnectedState) {
-                    sendOpenOcdCommand("shutdown");
-                    m_shutdownCommandSent = true;
-                } else if (m_isOpenOcdRunning) {
-                    stopOpenOcd();
-                }
-                return;
-            }
-
-            emit logToInterface(QString("Стирание чипа (%1) успешно. Начало программирования файла: %2")
-                                    .arg(mcuFamily).arg(originalFileInfo.fileName()), false);
-
-            ui->lblConnectionStatus->setText("<font color='blue'><b>Прошивка\n...</b></font>");
-            updateLoadingAnimation();
-
-            m_receivedTelnetData.clear();
-            sendOpenOcdCommand("reset halt");
-
-            QTimer::singleShot(200, this, [this, firmwarePathForOcd]() {
-                if (!m_isProgramming) {
-                    cleanupTemporaryFile();
-                    return;
-                }
-                QString programCmd = QString("program \"%1\" %2 verify reset").arg(firmwarePathForOcd).arg(m_firmwareAddress);
-                emit logToInterface(QString("Отправка команды программирования: %1").arg(programCmd), false);
-                sendOpenOcdCommand(programCmd);
-            });
-        });
-    });
+    onBtnEraseChipClicked();
 }
-
 
 void Unit1::stopOpenOcd() {
     bool wasConnected = m_isConnected;
@@ -900,21 +954,21 @@ void Unit1::stopOpenOcd() {
     m_isProgramming = false;
 
     if (m_telnetSocket && m_telnetSocket->state() != QAbstractSocket::UnconnectedState) {
-        emit logToInterface("Закрытие Telnet сокета...", false);
+        logFilteredMessage("Закрытие Telnet сокета...", false);
         m_telnetSocket->abort();
     }
 
     if (m_openOcdProcess && m_openOcdProcess->state() != QProcess::NotRunning) {
-        emit logToInterface("Остановка процесса OpenOCD...", false);
+        logFilteredMessage("Остановка процесса OpenOCD...", false);
         m_openOcdProcess->blockSignals(true);
         m_openOcdProcess->terminate();
         if (!m_openOcdProcess->waitForFinished(1000)) {
-            emit logToInterface("Принудительное завершение OpenOCD (kill)...", true);
+            logFilteredMessage("Принудительное завершение OpenOCD (kill)...", true);
             m_openOcdProcess->kill();
             m_openOcdProcess->waitForFinished(500);
         }
         m_openOcdProcess->blockSignals(false);
-        emit logToInterface("Процесс OpenOCD остановлен.", false);
+        logFilteredMessage("Процесс OpenOCD остановлен.", false);
     }
 
     m_animationTimer->stop();
@@ -935,12 +989,12 @@ void Unit1::stopOpenOcd() {
     ui->btnConnect->setEnabled(true);
     ui->cmbTargetMCU->setEnabled(true);
 
-    cleanupTemporaryFile(); // Очистка временных файлов
+    cleanupTemporaryFile();
 
     if (wasActive && !m_shutdownCommandSent) {
-        emit logToInterface("!! OpenOCD и все связанные операции остановлены (возможно, неожиданно).", false);
+        logFilteredMessage("!! OpenOCD и все связанные операции остановлены (возможно, неожиданно).", false);
     } else if (m_shutdownCommandSent) {
-        emit logToInterface("!! OpenOCD штатно остановлен после команды shutdown.", false);
+        logFilteredMessage("!! OpenOCD штатно остановлен после команды shutdown.", false);
     }
     m_shutdownCommandSent = false;
 
@@ -950,23 +1004,23 @@ void Unit1::stopOpenOcd() {
 
 void Unit1::sendOpenOcdCommand(const QString &command) {
     if (!m_telnetSocket || m_telnetSocket->state() != QAbstractSocket::ConnectedState) {
-        emit logToInterface("Ошибка: Невозможно отправить команду '" + command + "', нет активного Telnet соединения.", true);
+        logFilteredMessage("Ошибка: Невозможно отправить команду '" + command + "', нет активного Telnet соединения.", true);
 
         if(m_isProgramming && (command.startsWith("program") || command.startsWith("reset halt") || command == "shutdown")) {
-            emit logToInterface("Критическая ошибка Telnet во время программирования. Остановка.", true);
+            logFilteredMessage("Критическая ошибка Telnet во время программирования. Остановка.", true);
             m_isProgramming = false;
             QTimer::singleShot(100, this, &Unit1::stopOpenOcd);
         }
         return;
     }
 
-    emit logToInterface("[Telnet TX] " + command, false);
+    logFilteredMessage("[Telnet TX] " + command, false);
     QByteArray commandData = command.toUtf8() + "\n"; // OpenOCD ждет \n
 
     if (m_telnetSocket->write(commandData) == -1) {
-        emit logToInterface("Ошибка записи в Telnet сокет для команды: " + command, true);
+        logFilteredMessage("Ошибка записи в Telnet сокет для команды: " + command, true);
         if(m_isProgramming && (command.startsWith("program") || command.startsWith("reset halt") || command == "shutdown")) {
-            emit logToInterface("Критическая ошибка записи в Telnet во время программирования. Остановка.", true);
+            logFilteredMessage("Критическая ошибка записи в Telnet во время программирования. Остановка.", true);
             m_isProgramming = false;
             QTimer::singleShot(100, this, &Unit1::stopOpenOcd);
         }
@@ -977,12 +1031,12 @@ void Unit1::sendOpenOcdCommand(const QString &command) {
 
 void Unit1::handleOpenOcdStarted() {
     m_isOpenOcdRunning = true;
-    emit logToInterface("Процесс OpenOCD запущен.", false);
+    logFilteredMessage("Процесс OpenOCD запущен.", false);
 
     if (!m_isAttemptingAutoDetect) {
         QTimer::singleShot(750, this, [this]() {
             if (m_isConnecting && m_telnetSocket->state() == QAbstractSocket::UnconnectedState) {
-                emit logToInterface(QString("Подключение к Telnet %1:%2...").arg(m_openOcdHost).arg(m_openOcdTelnetPort), false);
+                logFilteredMessage(QString("Подключение к Telnet %1:%2...").arg(m_openOcdHost).arg(m_openOcdTelnetPort), false);
                 if (!m_animationTimer->isActive() || !ui->lblConnectionStatus->text().contains("Подключение")) {
                     ui->lblConnectionStatus->setText("<font color='blue'><b>Подключение\nTelnet...</b></font>");
                     ui->lblConnectionStatus->setVisible(true);
@@ -1007,27 +1061,89 @@ void Unit1::handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus)
     if (m_isAttemptingAutoDetect) {
         m_isAttemptingAutoDetect = false;
         m_isOpenOcdRunning = false;
+        if (m_autoDetectTimeoutTimer && m_autoDetectTimeoutTimer->isActive()) { // Проверка на null и активность
+            m_autoDetectTimeoutTimer->stop();
+        }
+
+        if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+            logFilteredMessage(QString("OpenOCD для автоопределения завершился с ошибкой. Код: %1, Статус: %2")
+                                    .arg(exitCode).arg(exitStatus == QProcess::NormalExit ? "Нормально" : "Аварийно"), true);
+
+            QString oocdOutput;
+            if (m_openOcdProcess) {
+                oocdOutput = QString::fromLocal8Bit(m_openOcdProcess->readAllStandardOutput() + m_openOcdProcess->readAllStandardError());
+            }
+
+            if (oocdOutput.contains("no device found", Qt::CaseInsensitive) ||
+                oocdOutput.contains("unable to find st-link", Qt::CaseInsensitive) ||
+                oocdOutput.contains("Can't find ST-Link", Qt::CaseInsensitive) ||
+                oocdOutput.contains("Couldn't find an ST-Link", Qt::CaseInsensitive) ) {
+                logFilteredMessage("Ошибка автоопределения: ST-Link не найден или не подключен к USB.", true);
+                if (ui && ui->lblConnectionStatus) ui->lblConnectionStatus->setText("<font color='red'>ST-Link<br>не найден</font>");
+            } else if (oocdOutput.contains("Can't init device", Qt::CaseInsensitive) ||
+                       oocdOutput.contains("could not initialize", Qt::CaseInsensitive) ||
+                       oocdOutput.contains("Can't connect to target", Qt::CaseInsensitive) ||
+                       oocdOutput.contains("Failed to init device", Qt::CaseInsensitive) ||
+                       oocdOutput.contains("Failed to connect to target", Qt::CaseInsensitive) ) {
+                logFilteredMessage("Ошибка автоопределения: Не удалось подключиться к MCU. Проверьте соединение ST-Link с платой.", true);
+                if (ui && ui->lblConnectionStatus) ui->lblConnectionStatus->setText("<font color='red'>MCU<br>не подключен</font>");
+            }
+            else {
+                logFilteredMessage("Автоопределение MCU не удалось из-за ошибки OpenOCD: " + oocdOutput.trimmed(), true);
+                if (m_animationTimer && m_animationTimer->isActive()) {
+                    m_animationTimer->stop();
+                }
+                if (ui && ui->lblConnectionStatus) {
+                    ui->lblConnectionStatus->setText("<font color='orange'><b>Автоопр.<br>Ошибка</b></font>");
+                    ui->lblConnectionStatus->setVisible(true);
+                }
+                if (statusTimer) {
+                    statusTimer->start(4000);
+                }
+            }
+
+            m_isConnecting = false;
+            m_detectedTargetScript.clear();
+            if (ui && ui->btnConnect) ui->btnConnect->setEnabled(true);
+            if (ui && ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(true);
+            updateUploadButtonsState();
+            return;
+        }
 
         if (!m_detectedTargetScript.isEmpty()) {
-            emit logToInterface(QString("Автоопределение завершено. Обнаружен MCU: %1. Переход к основному подключению.")
-                                    .arg(m_detectedTargetScript), false);
-            qDebug() << "handleOpenOcdFinished (autodetect success): Proceeding with script:" << m_detectedTargetScript;
-            int idx = ui->cmbTargetMCU->findData(m_detectedTargetScript);
-            if (idx != -1) {
+            logFilteredMessage(QString("Автоопределение завершено. Обнаружен MCU: %1. Переход к основному подключению.")
+                                    .arg(QFileInfo(m_detectedTargetScript).baseName()), false);
+
+            int idx = -1;
+            if (ui && ui->cmbTargetMCU) idx = ui->cmbTargetMCU->findData(m_detectedTargetScript);
+
+            if (idx != -1 && ui && ui->cmbTargetMCU) {
                 ui->cmbTargetMCU->setCurrentIndex(idx);
+                logFilteredMessage(QString("Выбран MCU '%1' в списке.").arg(ui->cmbTargetMCU->itemText(idx)), false);
             } else {
-                emit logToInterface("Предупреждение: Определенный скрипт " + m_detectedTargetScript + " не найден в списке MCU.", true);
+                logFilteredMessage("Предупреждение: Определенный скрипт " + m_detectedTargetScript + " не найден в списке доступных MCU.", true);
             }
             proceedWithConnection(m_detectedTargetScript);
         } else {
-            qDebug() << "handleOpenOcdFinished (autodetect FAILED): m_detectedTargetScript is EMPTY.";
-            emit logToInterface("Автоопределение MCU не удалось. OpenOCD завершился без определения типа.", true);
+            logFilteredMessage("Автоопределение MCU: OpenOCD отработал успешно, но тип MCU не определен по IDCODE.", true);
+
+            QString oocdOutputAfterSuccess;
+            if (m_openOcdProcess) {
+                oocdOutputAfterSuccess = QString::fromLocal8Bit(m_openOcdProcess->readAllStandardOutput() + m_openOcdProcess->readAllStandardError());
+            }
+
+            if (oocdOutputAfterSuccess.contains("IDCODE_VALUE:")) {
+                logFilteredMessage("Прочитанный IDCODE не соответствует известным типам. Весь вывод OpenOCD: " + oocdOutputAfterSuccess.trimmed(), true);
+            } else {
+                logFilteredMessage("Не удалось прочитать IDCODE, хотя OpenOCD завершился успешно. Весь вывод OpenOCD: " + oocdOutputAfterSuccess.trimmed(), true);
+            }
+
             m_isConnecting = false;
-            m_animationTimer->stop();
-            ui->lblConnectionStatus->setText("<font color='orange'><b>MCU<br>не опр.</br></b></font>");
-            statusTimer->start(3000);
-            ui->btnConnect->setEnabled(true);
-            ui->cmbTargetMCU->setEnabled(true);
+            if (m_animationTimer && m_animationTimer->isActive()) m_animationTimer->stop();
+            if (ui && ui->lblConnectionStatus) ui->lblConnectionStatus->setText("<font color='orange'><b>MCU<br>не опр.</b></font>");
+            if (statusTimer) statusTimer->start(3000);
+            if (ui && ui->btnConnect) ui->btnConnect->setEnabled(true);
+            if (ui && ui->cmbTargetMCU) ui->cmbTargetMCU->setEnabled(true);
             updateUploadButtonsState();
         }
         return;
@@ -1035,13 +1151,13 @@ void Unit1::handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
     m_isOpenOcdRunning = false;
     bool isUnexpectedError = (exitCode != 0 || exitStatus != QProcess::NormalExit);
-    emit logToInterface(QString("Процесс OpenOCD завершен (Код: %1, Статус: %2).")
+    logFilteredMessage(QString("Процесс OpenOCD завершен (Код: %1, Статус: %2).")
                             .arg(exitCode).arg(statusMsg), isUnexpectedError && !m_shutdownCommandSent);
 
     bool wasConnectingBeforeTelnet = m_isConnecting && !m_isConnected;
 
     if (m_shutdownCommandSent) {
-        emit logToInterface("OpenOCD корректно завершил работу после команды shutdown.", false);
+        logFilteredMessage("OpenOCD корректно завершил работу после команды shutdown.", false);
         m_isConnecting = false;
         m_isConnected = false;
         m_animationTimer->stop();
@@ -1052,7 +1168,7 @@ void Unit1::handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus)
         cleanupTemporaryFile();
         m_shutdownCommandSent = false;
     } else if (wasConnectingBeforeTelnet) {
-        emit logToInterface("OpenOCD неожиданно завершился или не смог остаться запущенным до Telnet соединения.", true);
+        logFilteredMessage("OpenOCD неожиданно завершился или не смог остаться запущенным до Telnet соединения.", true);
         m_isConnecting = false;
         m_animationTimer->stop();
         ui->lblConnectionStatus->setText("<font color='red'><b>Ошибка<br>OpenOCD</b></font>"); // Более информативно
@@ -1065,7 +1181,7 @@ void Unit1::handleOpenOcdFinished(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 void Unit1::handleOpenOcdError(QProcess::ProcessError error) {
-    emit logToInterface("Критическая ошибка процесса OpenOCD: " + m_openOcdProcess->errorString() + QString(" (Код: %1)").arg(error), true);
+    logFilteredMessage("Критическая ошибка процесса OpenOCD: " + m_openOcdProcess->errorString() + QString(" (Код: %1)").arg(error), true);
 
     m_autoDetectTimeoutTimer->stop();
     m_isAttemptingAutoDetect = false;
@@ -1086,7 +1202,7 @@ void Unit1::handleOpenOcdStdOut() {
         if (m_isAttemptingAutoDetect && m_detectedTargetScript.isEmpty()) {
             processOpenOcdOutputForDetection(message);
         }
-        emit logToInterface("[OOCD] " + message, false);
+        logFilteredMessage("[OOCD] " + message, false);
     }
 }
 
@@ -1108,12 +1224,12 @@ void Unit1::handleOpenOcdStdErr() {
         if (message.contains("Unable to match requested speed")) { isError = false; }
         if (message.contains("shutdown command invoked")) { isError = false; }
 
-        emit logToInterface("[OOCD ERR] " + message, isError);
+        logFilteredMessage("[OOCD ERR] " + message, isError);
     }
 }
 
 void Unit1::handleTelnetConnected() {
-    emit logToInterface("Telnet соединение установлено.", false);
+    logFilteredMessage("Telnet соединение установлено.", false);
 
     m_isConnected = true;
     m_isConnecting = false;
@@ -1131,18 +1247,18 @@ void Unit1::handleTelnetConnected() {
 
 void Unit1::handleTelnetDisconnected() {
     if (m_shutdownCommandSent) {
-        emit logToInterface("Telnet соединение закрыто OpenOCD.", false);
+        logFilteredMessage("Telnet соединение закрыто OpenOCD.", false);
         m_isConnected = false;
     }
     if (m_isConnected) {
-        emit logToInterface("Telnet соединение с OpenOCD неожиданно разорвано.", true);
+        logFilteredMessage("Telnet соединение с OpenOCD неожиданно разорвано.", true);
         m_animationTimer->stop();
         ui->lblConnectionStatus->setText("<font color='orange'><b>Разрыв<br>связи ?</b></font>");
         ui->lblConnectionStatus->setVisible(true);
         statusTimer->start(3000);
         stopOpenOcd();
     } else if (m_isConnecting) {
-        emit logToInterface("Telnet отключился во время попытки соединения.", true);
+        logFilteredMessage("Telnet отключился во время попытки соединения.", true);
         m_animationTimer->stop();
         ui->lblConnectionStatus->setText("<font color='red'><b>Ошибка<br>Telnet ✗</b></font>");
         ui->lblConnectionStatus->setVisible(true);
@@ -1153,11 +1269,11 @@ void Unit1::handleTelnetDisconnected() {
 
 void Unit1::handleTelnetError(QAbstractSocket::SocketError socketError) {
     if (m_shutdownCommandSent && socketError == QAbstractSocket::RemoteHostClosedError) {
-        emit logToInterface("Telnet соединение закрыто OpenOCD после команды shutdown.", false);
+        logFilteredMessage("Telnet соединение закрыто OpenOCD после команды shutdown.", false);
         return;
     }
 
-    emit logToInterface("Ошибка Telnet сокета: " + m_telnetSocket->errorString() + QString(" (Код: %1)").arg(socketError), true);
+    logFilteredMessage("Ошибка Telnet сокета: " + m_telnetSocket->errorString() + QString(" (Код: %1)").arg(socketError), true);
     m_animationTimer->stop();
 
     if (m_isConnecting) {
@@ -1170,69 +1286,119 @@ void Unit1::handleTelnetError(QAbstractSocket::SocketError socketError) {
 }
 
 void Unit1::processTelnetBuffer() {
+    if (!m_telnetSocket) return;
+
     if (m_telnetSocket->bytesAvailable() > 0) {
         m_receivedTelnetData.append(m_telnetSocket->readAll());
     }
 
-    QString fullBuffer = QString::fromUtf8(m_receivedTelnetData);
+    QString fullBufferForAnalysis = QString::fromUtf8(m_receivedTelnetData);
 
-    if (m_isProgramming && !m_shutdownCommandSent) {
-        bool outcomeDetected = false;
-        bool verifyOk = fullBuffer.contains("Verified OK", Qt::CaseInsensitive) ||
-                        fullBuffer.contains("verification succeded", Qt::CaseInsensitive) ||
-                        fullBuffer.contains("verified", Qt::CaseInsensitive);
-        bool programFailedGeneral = fullBuffer.contains("failed", Qt::CaseInsensitive) ||
-                                    fullBuffer.contains("error:", Qt::CaseInsensitive);
-        bool programFailedSpecific = fullBuffer.contains("** Programming Failed **", Qt::CaseInsensitive) ||
-                                     fullBuffer.contains("Error: couldn't open", Qt::CaseInsensitive) ||
-                                     fullBuffer.contains("timed out while waiting for target halted", Qt::CaseInsensitive);
+    bool programmingDefinitelySucceeded = fullBufferForAnalysis.contains("** Verified OK **", Qt::CaseSensitive);
+    bool programmingDefinitelyFailed = fullBufferForAnalysis.contains("** Programming Failed **", Qt::CaseSensitive);
 
-        if (programFailedSpecific || (programFailedGeneral && fullBuffer.contains("program", Qt::CaseInsensitive))) {
-            if (fullBuffer.contains("TARGET: stm32") && fullBuffer.contains("- Not halted") && !programFailedSpecific) {
-            } else {
-                emit logToInterface("Ошибка программирования/верификации!", true);
+    if (m_isProgramming && (programmingDefinitelySucceeded || programmingDefinitelyFailed)) {
+        if (programmingDefinitelySucceeded) {
+            logFilteredMessage("Программирование и верификация успешно завершены (детектирован финальный маркер)!", false);
+            if (m_animationTimer && m_animationTimer->isActive()) {
                 m_animationTimer->stop();
-                ui->lblConnectionStatus->setText("<font color='red'><b>Прошивка<br>✗</b></font>");
-                outcomeDetected = true;
             }
-        } else if (verifyOk) {
-            if (fullBuffer.contains("error", Qt::CaseInsensitive) && fullBuffer.contains("verified", Qt::CaseInsensitive)) {
-            } else {
-                emit logToInterface("Программирование и верификация успешно завершены!", false);
-                m_animationTimer->stop();
+            if (ui && ui->lblConnectionStatus) {
                 ui->lblConnectionStatus->setText("<font color='green'><b>Прошивка<br>✓</b></font>");
-                outcomeDetected = true;
+            }
+            if (statusTimer) {
+                statusTimer->start(3000);
+            }
+        } else {
+            logFilteredMessage("Ошибка программирования (детектирован финальный маркер Programming Failed)!", true);
+            if (m_animationTimer && m_animationTimer->isActive()) {
+                m_animationTimer->stop();
+            }
+            if (ui && ui->lblConnectionStatus) {
+                ui->lblConnectionStatus->setText("<font color='red'><b>Прошивка<br>✗</b></font>");
+            }
+            if (statusTimer) {
+                statusTimer->start(5000);
             }
         }
 
+        if (m_isEraseBeforeProgramming) {
+            cleanupTemporaryFile();
+            m_isEraseBeforeProgramming = false;
+        }
+        m_isProgramming = false;
+        m_criticalHaltErrorOccurredDuringProgramming = false;
+        updateUploadButtonsState();
 
-        if (outcomeDetected) {
-            m_isProgramming = false;
-            statusTimer->start(5000);
-
-            emit logToInterface("Отправка команды shutdown в OpenOCD...", false);
+        if (!m_shutdownCommandSent) {
+            logFilteredMessage("Отправка команды shutdown в OpenOCD после программирования...", false);
             sendOpenOcdCommand("shutdown");
             m_shutdownCommandSent = true;
         }
+        m_receivedTelnetData.clear();
+        return;
     }
 
     int promptPos;
     while ((promptPos = m_receivedTelnetData.indexOf("\n> ")) != -1) {
         QByteArray messageBytes = m_receivedTelnetData.left(promptPos);
         QString message = QString::fromUtf8(messageBytes).trimmed();
-
         m_receivedTelnetData.remove(0, promptPos + 3);
 
-        if (!message.isEmpty()) {
-            bool isError = message.startsWith("Error:", Qt::CaseInsensitive) ||
-                           message.contains("failed", Qt::CaseInsensitive) ||
-                           message.contains("timed out", Qt::CaseInsensitive) ||
-                           message.contains("Can't find", Qt::CaseInsensitive);
-            bool isWarning = message.startsWith("Warn :", Qt::CaseInsensitive);
-            if (message.contains("clearing lockup after double fault")) isError = true;
-            if (message.contains("xPSR: 0x01000003")) isError = true;
+        if (message.isEmpty()) {
+            continue;
+        }
 
-            emit logToInterface("[Telnet] " + message, isError || isWarning);
+        qDebug() << "[Telnet RAW MSG]:" << message << "m_isProgramming:" << m_isProgramming;
+
+        bool isCriticalHaltError = message.contains("timed out while waiting for target halted", Qt::CaseInsensitive) ||
+                                   message.contains("Not halted", Qt::CaseInsensitive);
+
+        bool isSuccessForThisMessage = message.contains("Verified OK", Qt::CaseInsensitive) &&
+                                       !message.contains("failed", Qt::CaseInsensitive) &&
+                                       !message.contains("Error:", Qt::CaseInsensitive);
+
+        bool isGenericErrorOther = (message.contains("Error:", Qt::CaseInsensitive) ||
+                                    message.contains("failed", Qt::CaseInsensitive) ||
+                                    message.contains("Can't find", Qt::CaseInsensitive)) &&
+                                   !isSuccessForThisMessage;
+
+        if (isSuccessForThisMessage && m_isProgramming) {
+            logFilteredMessage("[Telnet OK (промежуточный)] " + message, false);
+        } else if (isCriticalHaltError) {
+            logFilteredMessage("[Telnet ERR] " + message, true);
+            if (m_isProgramming) {
+                logFilteredMessage("!!! КРИТИЧЕСКАЯ ОШИБКА HALT ОБНАРУЖЕНА Telnet И ФЛАГ УСТАНОВЛЕН !!!", true);
+                m_criticalHaltErrorOccurredDuringProgramming = true;
+                logFilteredMessage("Ошибка HALT зафиксирована Telnet во время активной операции. Контроль у операции.", false);
+            } else {
+                logFilteredMessage("Ошибка HALT Telnet вне активной операции.", true);
+            }
+        } else if (isGenericErrorOther) {
+            logFilteredMessage("[Telnet ERR] " + message, true);
+            if (m_isProgramming) {
+                if (message.contains("flash write failed", Qt::CaseInsensitive)) {
+                    logFilteredMessage("Зафиксирована ошибка записи flash. Завершение операции из processTelnetBuffer.", true);
+                    if (m_animationTimer && m_animationTimer->isActive()) m_animationTimer->stop();
+                    if (ui                        && ui->lblConnectionStatus) ui->lblConnectionStatus->setText("<font color='red'><b>Прошивка<br>✗ (Flash Fail)</b></font>");
+                    if (statusTimer) statusTimer->start(4000);
+
+                    if (m_isEraseBeforeProgramming) { cleanupTemporaryFile(); m_isEraseBeforeProgramming = false; }
+                    m_isProgramming = false;
+                    m_criticalHaltErrorOccurredDuringProgramming = false;
+                    updateUploadButtonsState();
+                    if (!m_shutdownCommandSent) {
+                        sendOpenOcdCommand("shutdown"); m_shutdownCommandSent = true;
+                    }
+                } else {
+                    logFilteredMessage("Промежуточная общая ошибка Telnet зафиксирована во время активной операции.", false);
+                }
+            } else {
+                logFilteredMessage("Общая ошибка Telnet вне активной операции.", true);
+            }
+        }
+        else {
+            logFilteredMessage("[Telnet] " + message, false);
         }
     }
 }
@@ -1241,9 +1407,9 @@ void Unit1::cleanupTemporaryFile() {
     if (!m_firmwareFilePathForUpload.isEmpty()) {
         QFile tempFile(m_firmwareFilePathForUpload);
         if (tempFile.exists()) {
-            emit logToInterface("Удаление временного файла прошивки: " + m_firmwareFilePathForUpload, false);
+            logFilteredMessage("Удаление временного файла прошивки: " + m_firmwareFilePathForUpload, false);
             if (!tempFile.remove()) {
-                emit logToInterface("Предупреждение: Не удалось удалить временный файл: " + m_firmwareFilePathForUpload + ". Ошибка: "
+                logFilteredMessage("Предупреждение: Не удалось удалить временный файл: " + m_firmwareFilePathForUpload + ". Ошибка: "
                                         + tempFile.errorString(), true);
             }
         }
@@ -1257,20 +1423,20 @@ void Unit1::cleanupTemporaryFile() {
             if (tempSubDir.entryInfoList().isEmpty()) {
                 QDir parentOfTempSubDir = tempSubDir;
                 if (parentOfTempSubDir.cdUp()) {
-                    emit logToInterface("Попытка удаления пустой временной подпапки: " + tempSubDir.path(), false);
+                    logFilteredMessage("Попытка удаления пустой временной подпапки: " + tempSubDir.path(), false);
                     if (parentOfTempSubDir.rmdir(tempSubDir.dirName())) {
-                        emit logToInterface("Временная подпапка успешно удалена: " + tempSubDir.path(), false);
+                        logFilteredMessage("Временная подпапка успешно удалена: " + tempSubDir.path(), false);
                         m_currentSafeTempSubdirPath.clear();
                     } else {
-                        emit logToInterface("Предупреждение: Не удалось удалить пустую временную подпапку: " + tempSubDir.path() +
+                        logFilteredMessage("Предупреждение: Не удалось удалить пустую временную подпапку: " + tempSubDir.path() +
                                                 ". Возможно, используется другим процессом или ошибка прав.", true);
                     }
                 } else {
-                    emit logToInterface("Предупреждение: Не удалось перейти к родительскому каталогу для удаления подпапки: "
+                    logFilteredMessage("Предупреждение: Не удалось перейти к родительскому каталогу для удаления подпапки: "
                                             + tempSubDir.path(), true);
                 }
             } else {
-                emit logToInterface("Временная подпапка не пуста, не удаляем: " + tempSubDir.path(), false);
+                logFilteredMessage("Временная подпапка не пуста, не удаляем: " + tempSubDir.path(), false);
             }
         }
     }
@@ -1641,7 +1807,7 @@ struct ProgInfo_Original { // Назовем чуть иначе, чтобы и�
 #pragma pack(pop)
 
 // ВАЖНО: Используем ProgInfo_Original и оригинальную логику CRC
-void Unit1::createFirmwareFiles(const QString &outputDir)
+void Unit1::createFirmwareFiles(const QString &outputDir, bool showMessageBoxes)
 {
     QString serialBeginStr = ui->editInitialSerialNumber->text().trimmed();
     bool ok;
@@ -1819,8 +1985,20 @@ void Unit1::createFirmwareFiles(const QString &outputDir)
 
     }
 
-    if (filesCreated > 0) { QMessageBox::information(ui->cmbRevision->window(), "Готово", QStringLiteral("%1 файл(ов) прошивки успешно создан(о) в папке:\n%2").arg(filesCreated).arg(QDir::toNativeSeparators(outputDir))); }
-    else if (serialCount > 0) { QMessageBox::warning(ui->cmbRevision->window(), "Завершено", "Не было создано ни одного файла (возможно, из-за ошибок)."); }
+    if (filesCreated > 0) {
+        if (showMessageBoxes) {
+            QMessageBox::information(ui->cmbRevision->window(), "Готово", QStringLiteral("%1 файл(ов) прошивки успешно создан(о) в папке:\n%2").arg(filesCreated).arg(QDir::toNativeSeparators(outputDir)));
+        } else {
+            logFilteredMessage(QStringLiteral("%1 файл(ов) прошивки успешно создан(о) в папке: %2 (автоматически)").arg(filesCreated).arg(QDir::toNativeSeparators(outputDir)), false);
+        }
+    }
+    else if (serialCount > 0) {
+        if (showMessageBoxes) { // <--- Проверка флага
+            QMessageBox::warning(ui->cmbRevision->window(), "Завершено", "Не было создано ни одного файла (возможно, из-за ошибок).");
+        } else {
+            logFilteredMessage("createFirmwareFiles: Не было создано ни одного файла (автоматически).", true);
+        }
+    }
 }
 
 // Функция generateCRCTables из оригинала
@@ -1877,7 +2055,7 @@ void Unit1::onBtnCreateFileManualClicked()
 {
     QString dir = QFileDialog::getExistingDirectory(ui->cmbRevision->window(), tr("Выберите папку для сохранения прошивок"), QDir::currentPath());
     if (dir.isEmpty()) return;
-    createFirmwareFiles(dir);
+    createFirmwareFiles(dir, true);
 }
 
 void Unit1::onBtnCreateFileAutoClicked()
@@ -1898,5 +2076,5 @@ void Unit1::onBtnCreateFileAutoClicked()
         return;
     }
 
-    createFirmwareFiles(outDirAbs);
+    createFirmwareFiles(outDirAbs, true);
 }

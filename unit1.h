@@ -58,6 +58,8 @@ private:
     QTimer *m_animationTimer;
     int m_animationFrame;
 
+    bool m_criticalHaltErrorOccurredDuringProgramming = false;
+
     QMap<QString, RevisionInfo> revisionsMap; // Карта для хранения данных ревизий Unit1
     QSet<QString> autoSavePaths;  // Множество всех путей автосохранения из <SaveFirmware>
     QString SaveFirmware; // Текущий путь автосохранения для выбранной ревизии
@@ -75,7 +77,8 @@ private:
     void updateLoaderFileSize(const QString &filePath);
     void updateProgramDataFileSize(const QString &filePath);
     void updateTotalFirmwareSize();
-    void createFirmwareFiles(const QString &outputDir);
+    void createFirmwareFiles(const QString &outputDir, bool showMessageBoxes = true);
+    QString predictAutoCreatedFilePath(const QString& outputDir, const QString& revisionCategory, int serialNumber);
 
     // Автодетектор OpenOCD
     bool m_isAttemptingAutoDetect;
@@ -131,6 +134,7 @@ public slots:
     void onbtnUploadCPU1Clicked();
     void onbtnUploadCPU2Clicked();
     void onBtnEraseChipClicked();
+    void logFilteredMessage(const QString& originalMessage, bool isError);
     void stopOpenOcd();
 
 private slots:
