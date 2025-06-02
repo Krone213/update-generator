@@ -66,7 +66,11 @@ private:
     QByteArray loadFile(const QString &filePath);
     void generateCRCTables(quint32* fwdTable, quint32* revTable);
 
-    // Вернем calculateReverseCRC, т.к. он был в вашем первом коде
+    bool m_isEraseBeforeProgramming = false;
+    QString m_firmwarePathForDelayedProgramming;
+    QString m_firmwareAddressForDelayedProgramming;
+    QString m_originalFileNameForDelayedProgramming;
+
     quint32 calculateReverseCRC(const QByteArray &data_with_placeholders, quint32 targetCRC, const quint32* revTable);
     void updateLoaderFileSize(const QString &filePath);
     void updateProgramDataFileSize(const QString &filePath);
@@ -144,6 +148,7 @@ private slots:
 
     bool checkOpenOcdPrerequisites(const QString& targetScriptPath);
     void sendOpenOcdCommand(const QString &command);
+    void proceedToProgrammingAfterErase();
     void processTelnetBuffer();
     void cleanupTemporaryFile();
     void updateLoadingAnimation();

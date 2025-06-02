@@ -383,7 +383,7 @@ void Unit2::onBtnUpdateCreateFileManualClicked()
         baseName = "FirmwareUpdate";
     }
     baseName.replace(QRegularExpression(R"([\\/:*?"<>|])"), "_");
-    QString suggestedFileName = baseName + "_Update.bin"; // Added _Update
+    QString suggestedFileName = "Firmware.bin"; // Added _Update
 
     QString initialDir = QDir::currentPath();
 

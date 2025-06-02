@@ -579,7 +579,7 @@ QComboBox QAbstractItemView::item:selected {
           <string>Размер: -</string>
          </property>
         </widget>
-        <widget class="QLabel" name="lblProgramDataFileName">
+        <widget class="MyLabel" name="lblProgramDataFileName">
          <property name="geometry">
           <rect>
            <x>10</x>
@@ -1930,6 +1930,13 @@ QComboBox QAbstractItemView::item:selected {
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MyLabel</class>
+   <extends>QLabel</extends>
+   <header>mylabel.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -17,7 +17,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QKeyEvent>
-
+#include "mylabel.h"
 #include "unit1.h"
 #include "unit2.h"
 
@@ -35,6 +35,7 @@ class QTextEdit;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -80,6 +81,11 @@ private:
     void synchronizeComboBoxes(QObject* senderComboBox);
     void filterAndPopulateRevisionComboBoxes(const QString& deviceModelXmlName, QComboBox* sourceDevModelComboBox = nullptr);
     void updateBldrDevModelDisplay(const QString& category);
+    void onLblProgramDataFileNameTextChanged(const QString& newText);
+    void updateWhatWillUploadLabel();
+    QString extractVersionFromPath(const QString &filePath);
+
+
 };
 
 #endif // MAINWINDOW_H

@@ -28,23 +28,32 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         crcunit.h crcunit.cpp
         config_data.h
         resources.qrc
-
+        mylabel.h mylabel.cpp
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET UpdateGenerator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
+    target_include_directories(UpdateGenerator PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) # <--- ДОБАВЬТЕ ЭТО
 else()
     if(ANDROID)
         add_library(UpdateGenerator SHARED
             ${PROJECT_SOURCES}
+            unit1.h unit1.cpp # <--- Не забудьте добавить все нужные файлы и сюда
+            unit2.h unit2.cpp
+            crcunit.h crcunit.cpp
+            config_data.h
+            resources.qrc
+            mylabel.h mylabel.cpp
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+        target_include_directories(UpdateGenerator PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) # <--- И СЮДА
     else()
         add_executable(UpdateGenerator
             ${PROJECT_SOURCES}
+            unit1.h unit1.cpp # <--- И сюда тоже
+            unit2.h unit2.cpp
+            crcunit.h crcunit.cpp
+            config_data.h
+            resources.qrc
+            mylabel.h mylabel.cpp
         )
+        target_include_directories(UpdateGenerator PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) # <--- И СЮДА
     endif()
 endif()
 

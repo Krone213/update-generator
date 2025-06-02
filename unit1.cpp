@@ -485,14 +485,14 @@ void Unit1::onBtnEraseChipClicked() {
     m_receivedTelnetData.clear();
     sendOpenOcdCommand("reset halt");
 
-    QTimer::singleShot(200, this, [this, mcuFamily]() {
+    QTimer::singleShot(500, this, [this, mcuFamily]() {
         if (!m_isProgramming) return;
 
         QString eraseCommand = QString("%1 mass_erase 0").arg(mcuFamily);
         emit logToInterface(QString("Отправка команды стирания: %1").arg(eraseCommand), false);
         sendOpenOcdCommand(eraseCommand);
 
-        QTimer::singleShot(5000, this, [this, mcuFamily]() {
+        QTimer::singleShot(10000, this, [this, mcuFamily]() {
             if (!m_isProgramming) return;
 
             bool commandErrorDetected = m_receivedTelnetData.contains("Error:") ||
@@ -512,10 +512,9 @@ void Unit1::onBtnEraseChipClicked() {
                 m_animationTimer->stop();
                 ui->lblConnectionStatus->setText(QString("<font color='green'><b>Стирание<br> ОК</b></font>"));
                 statusTimer->start(3000);
-
-                sendOpenOcdCommand("shutdown");
-                m_shutdownCommandSent = true;
             }
+            m_isProgramming = false;
+            updateUploadButtonsState();
         });
     });
 }

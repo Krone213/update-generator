@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -73,6 +74,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnUpdateShowInfo, &QPushButton::clicked, unit2, &Unit2::onBtnUpdateShowInfoClicked);
     connect(ui->btnClearUpdateRevision, &QPushButton::clicked, unit2, &Unit2::onBtnClearUpdateRevisionClicked);
     connect(ui->btnUpdateCreateFileAuto, &QPushButton::clicked, this, &MainWindow::onAutoCreateUpdateTriggered);
+    connect(ui->lblProgramDataFileName, &MyLabel::textChanged,
+            this, &MainWindow::onLblProgramDataFileNameTextChanged);
+     this->updateWhatWillUploadLabel();
 
     ui->cmbDevModel->setCurrentIndex(-1);
     ui->cmbUpdateDevModel->setCurrentIndex(-1);
@@ -673,7 +677,7 @@ void MainWindow::onAutoCreateUpdateTriggered() {
     }
     QString baseName = currentCategory;
     baseName.replace(QRegularExpression(R"([\\/:*?"<>|])"), "_");
-    QString outFilePathAbs = dir.filePath(baseName + "_Update.bin");
+    QString outFilePathAbs = dir.filePath("Firmware.bin");
     qInfo() << "Triggering auto-create update in Unit2 for file:" << outFilePathAbs;
     if(unit2) unit2->createUpdateFiles(outFilePathAbs);
 }
@@ -695,4 +699,82 @@ QSet<QString> MainWindow::getUpdateAutoSavePaths() const
 
 const QMap<QString, ExtendedRevisionInfo>& MainWindow::getRevisionsMap() const {
     return revisionsMap;
+}
+
+
+void MainWindow::onLblProgramDataFileNameTextChanged(const QString& newText)
+{
+    qDebug() << Q_FUNC_INFO << "lblProgramDataFileName text changed to:" << newText;
+    // Теперь просто вызываем вашу основную функцию обновления метки версии.
+    // newText здесь можно использовать для отладки, но updateWhatWillUploadLabel
+    // все равно возьмет актуальный текст из ui->lblProgramDataFileName->text().
+    this->updateWhatWillUploadLabel();
+}
+
+QString MainWindow::extractVersionFromPath(const QString &filePath) {
+    qDebug() << Q_FUNC_INFO << "filePath:" << filePath;
+
+    if (filePath.isEmpty() || filePath.startsWith("Файл:") || filePath == "-") {
+        qDebug() << "  Path is empty or placeholder, returning '-'";
+        return "-";
+    }
+
+    // 1. Получаем путь к директории, содержащей файл.
+    // QFileInfo::path() вернет путь к директории. На Windows он может вернуть путь
+    // с '\', на Linux с '/'. Внутри Qt строки часто используют '/', но лучше не полагаться.
+    QString dirPathContainingFile = QFileInfo(filePath).path();
+    qDebug() << "  Path of directory containing the file (QFileInfo::path()):" << dirPathContainingFile;
+
+    if (dirPathContainingFile.isEmpty() || dirPathContainingFile == ".") {
+        qDebug() << "  Directory path is empty or '.', cannot extract version from path components. Returning '-'";
+        return "-";
+    }
+
+    // 2. ЯВНО нормализуем разделители к '/' для единообразного split.
+    // QDir::cleanPath() или QDir::to τότε('/') более надежны для этого,
+    // чем просто fromNativeSeparators, если путь уже мог быть смешанным или странным.
+    // QDir::fromNativeSeparators преобразует только системные разделители в '/'.
+    // QDir::cleanPath() делает более общую нормализацию, включая удаление ".." и "."
+    // и приведение к каноническим разделителям Qt (которые '/').
+    QString normalizedDirPath = QDir::cleanPath(dirPathContainingFile);
+    qDebug() << "  Normalized directory path for splitting (QDir::cleanPath):" << normalizedDirPath;
+
+
+    // 3. Разбиваем нормализованный путь к директории на компоненты по '/'
+    QStringList pathComponents = normalizedDirPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    qDebug() << "  Path components of directory:" << pathComponents;
+
+    if (pathComponents.size() >= 1) {
+        QString potentialVersion = pathComponents.last();
+        qDebug() << "  Potential version (last component of dir path):" << potentialVersion;
+
+        QRegularExpression versionRegex(R"(^\d+(\.\d+){1,3}$)");
+        if (versionRegex.match(potentialVersion).hasMatch()) {
+            qDebug() << "  Version matched regex! Returning:" << potentialVersion;
+            return potentialVersion;
+        } else {
+            qDebug() << "  Potential version DID NOT match regex.";
+        }
+    }
+    qDebug() << "  No version found by dir path logic, returning '-'";
+    return "-";
+}
+
+void MainWindow::updateWhatWillUploadLabel() {
+    qDebug() << Q_FUNC_INFO << "CALLED";
+    if (!ui || !ui->lblProgramDataFileName || !ui->lblWhatWillUpload) {
+        qDebug() << "  UI elements (lblProgramDataFileName or lblWhatWillUpload) are null, returning.";
+        return;
+    }
+
+    // lblWhatWillUpload относится к первой вкладке (Unit1)
+    // ui->lblProgramDataFileName теперь MyLabel, но text() работает так же
+    QString programFilePath = ui->lblProgramDataFileName->text();
+    qDebug() << "  File path from lblProgramDataFileName (Unit1):" << programFilePath;
+
+    QString version = extractVersionFromPath(programFilePath);
+    qDebug() << "  Extracted version for Unit1:" << version;
+
+    ui->lblWhatWillUpload->setText(QString("Версия: %1").arg(version));
+    qDebug() << "  lblWhatWillUpload updated to:" << ui->lblWhatWillUpload->text();
 }
